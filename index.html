@@ -1,0 +1,1657 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#11131a">
+  <meta name="description" content="Generate, solve, play, and export seeded mazes in your browser.">
+  <title>Maze Lab Deluxe</title>
+  <style>
+:root {
+  color-scheme: dark;
+  --bg: #0b0d12;
+  --panel: #131720;
+  --panel-2: #191e29;
+  --line: #2b3241;
+  --muted: #8e98aa;
+  --text: #f5f7fb;
+  --cyan: #5ee7ff;
+  --violet: #9d7bff;
+  --green: #52e3a4;
+  --shadow: 0 22px 60px rgba(0, 0, 0, .38);
+}
+
+* { box-sizing: border-box; }
+
+html, body { min-height: 100%; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 80% -10%, rgba(104, 71, 220, .19), transparent 36rem),
+    radial-gradient(circle at 12% 20%, rgba(49, 179, 214, .09), transparent 30rem),
+    var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow: hidden;
+}
+
+button, input, select { font: inherit; }
+button { color: inherit; }
+
+.topbar {
+  height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 11px 22px 11px 24px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  background: rgba(11, 13, 18, .84);
+  backdrop-filter: blur(18px);
+}
+
+.eyebrow {
+  margin: 0 0 1px;
+  color: var(--muted);
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .18em;
+}
+
+h1 { margin: 0; font-size: 1.55rem; line-height: 1.1; letter-spacing: -.04em; }
+h1 span { color: var(--cyan); }
+.header-actions { display: flex; gap: 9px; }
+.coffee-link { display: flex; align-items: center; gap: 9px; min-height: 42px; padding: 6px 11px; border: 1px solid #5f5125; border-radius: 11px; color: #fff5bd; background: linear-gradient(135deg, #3a2f0c, #24200f); text-decoration: none; box-shadow: 0 8px 26px rgba(255, 205, 58, .09); transition: .15s ease; }
+.coffee-link:hover { transform: translateY(-1px); border-color: #d7b83e; box-shadow: 0 10px 30px rgba(255, 205, 58, .16); }
+.coffee-link svg { width: 25px; height: 25px; flex: 0 0 auto; fill: #ffdc52; filter: drop-shadow(0 0 7px rgba(255, 220, 82, .28)); }
+.coffee-link span { display: grid; line-height: 1.08; }
+.coffee-link strong { font-size: .72rem; }
+.coffee-link small { margin-top: 3px; color: #c5b877; font-size: .56rem; }
+
+.button, .chip, .icon-button, .dpad button, .completion button {
+  border: 0;
+  cursor: pointer;
+  transition: transform .14s ease, border-color .14s ease, background .14s ease, opacity .14s ease;
+}
+.button:hover, .chip:hover, .icon-button:hover, .dpad button:hover { transform: translateY(-1px); }
+.button:active, .chip:active, .icon-button:active, .dpad button:active { transform: translateY(0); }
+.button:disabled { cursor: wait; opacity: .55; }
+
+.button {
+  padding: 10px 15px;
+  border-radius: 10px;
+  font-weight: 750;
+}
+.button kbd { margin-left: 5px; padding: 2px 5px; border: 1px solid rgba(255,255,255,.3); border-radius: 5px; background: rgba(0,0,0,.18); font: 700 .62rem/1 ui-monospace, monospace; }
+.button.primary { background: linear-gradient(135deg, #684cff, #31c7e7); box-shadow: 0 9px 28px rgba(80, 90, 255, .25); }
+.button.ghost { background: #191d26; border: 1px solid #343b4b; }
+.button.secondary { background: #242a37; border: 1px solid #363e4e; }
+.button.export { color: #06130e; background: linear-gradient(135deg, #57e4a6, #73d8ef); }
+.button.cancel { color: #ffdce3; background: #49232c; border: 1px solid #8b3e4e; }
+.full-button { width: 100%; }
+
+.app-shell {
+  height: calc(100vh - 78px);
+  display: grid;
+  grid-template-columns: 354px minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px;
+}
+
+.controls {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #454e61 transparent;
+  padding-right: 3px;
+}
+
+.control-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(60px, 1fr));
+  gap: 5px;
+  margin-bottom: 9px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(11, 13, 18, .94);
+  backdrop-filter: blur(12px);
+}
+.control-tabs button { min-width: 0; padding: 8px 4px; border: 0; border-radius: 8px; color: var(--muted); background: transparent; cursor: pointer; font-size: .68rem; font-weight: 800; }
+.control-tabs button.active { color: #081116; background: linear-gradient(135deg, var(--cyan), #a495ff); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.tab-panel > summary { display: none; }
+.tab-panel > .section-body { border-top: 0; }
+
+details {
+  margin-bottom: 9px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: rgba(19, 23, 32, .92);
+  box-shadow: 0 8px 28px rgba(0,0,0,.13);
+  overflow: clip;
+}
+
+summary {
+  padding: 13px 15px;
+  font-size: .82rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; float: right; color: var(--muted); font-size: 1rem; }
+details[open] summary::after { content: "−"; }
+details[open] summary { border-bottom: 1px solid var(--line); }
+
+.section-body { display: grid; gap: 11px; padding: 13px; }
+.section-body.compact { gap: 9px; }
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.field { min-width: 0; display: grid; gap: 5px; }
+.field > span, .hint { color: var(--muted); font-size: .72rem; font-weight: 650; }
+.field.full { width: 100%; }
+
+input[type="text"], input[type="number"], select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #343c4d;
+  border-radius: 9px;
+  outline: none;
+  color: var(--text);
+  background: #0f1219;
+  padding: 8px 9px;
+}
+select { padding-right: 25px; }
+input:focus, select:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(94, 231, 255, .09); }
+
+.inline-control { display: grid; grid-template-columns: 1fr 38px; gap: 6px; }
+.icon-button { border: 1px solid #343c4d; border-radius: 9px; background: #242a37; font-size: 1.2rem; }
+.range-field > span { display: flex; justify-content: space-between; gap: 8px; }
+output { color: var(--cyan); }
+input[type="range"] { width: 100%; accent-color: #7864ff; }
+
+.palette-controls { display: grid; gap: 8px; }
+.palette-row { display: grid; grid-template-columns: 55px minmax(0, 1fr) 35px 53px; align-items: center; gap: 5px; }
+.palette-row > span { color: var(--muted); font-size: .72rem; font-weight: 650; }
+.palette-row select { min-height: 35px; padding-block: 5px; font-size: .78rem; }
+.palette-row input[type="color"] { width: 35px; height: 35px; padding: 2px; border: 1px solid #343c4d; border-radius: 9px; background: #0f1219; cursor: pointer; }
+.anim-button { height: 35px; padding: 0 5px; border: 1px solid #3b4456; border-radius: 8px; color: #aeb8ca; background: #252b38; cursor: pointer; font-size: .62rem; font-weight: 800; }
+.anim-button.active, .animation-launch.active { color: #071115; border-color: transparent; background: linear-gradient(135deg, #67e8f9, #a78bfa); }
+.animation-launch { padding: 8px 10px; font-size: .72rem; }
+.wide-color { height: 38px; padding: 3px; cursor: pointer; }
+.subpanel { display: grid; gap: 9px; margin-top: 2px; padding: 11px; border: 1px solid #303849; border-radius: 10px; background: #10141c; }
+.mini-title { margin: 0; color: #d5dbea; font-size: .72rem; font-weight: 800; letter-spacing: .03em; }
+.camera-buttons { display: grid; grid-template-columns: 42px 1fr 42px 1fr; gap: 6px; }
+.camera-buttons .button { min-width: 0; padding: 8px 5px; }
+
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #d8deea; font-size: .79rem; cursor: pointer; }
+.switch-row input { position: absolute; opacity: 0; pointer-events: none; }
+.switch-row i { position: relative; width: 38px; height: 22px; flex: 0 0 auto; border-radius: 999px; background: #353c4a; transition: .18s ease; }
+.switch-row i::after { content: ""; position: absolute; width: 16px; height: 16px; top: 3px; left: 3px; border-radius: 50%; background: #fff; transition: .18s ease; }
+.switch-row input:checked + i { background: linear-gradient(135deg, #745cff, #3bcce9); }
+.switch-row input:checked + i::after { transform: translateX(16px); }
+.is-hidden { display: none !important; }
+.export-actions { display: grid; gap: 7px; }
+.hint { margin: -2px 0 0; line-height: 1.45; font-weight: 500; }
+
+.workspace {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  overflow: hidden;
+  background: rgba(17, 20, 28, .88);
+  box-shadow: var(--shadow);
+}
+
+.viewer-toolbar, .playbar {
+  min-height: 51px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 8px 13px;
+  border-bottom: 1px solid var(--line);
+  background: #151922;
+}
+.playbar { min-height: 49px; border-top: 1px solid var(--line); border-bottom: 0; color: var(--muted); font-size: .76rem; }
+.status { min-width: 0; color: #bec6d4; font-size: .76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status strong { color: var(--text); }
+.chip { flex: 0 0 auto; padding: 7px 11px; border: 1px solid #384154; border-radius: 999px; background: #242a37; font-size: .72rem; font-weight: 750; }
+.chip[aria-pressed="true"] { color: #090f13; border-color: transparent; background: var(--cyan); }
+
+.canvas-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  outline: none;
+  background-color: #242832;
+  background-image:
+    linear-gradient(45deg, #292e38 25%, transparent 25%),
+    linear-gradient(-45deg, #292e38 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #292e38 75%),
+    linear-gradient(-45deg, transparent 75%, #292e38 75%);
+  background-size: 22px 22px;
+  background-position: 0 0, 0 11px, 11px -11px, -11px 0;
+}
+.canvas-stage:focus-visible { box-shadow: inset 0 0 0 2px var(--cyan); }
+#mazeCanvas { display: block; max-width: none; max-height: none; transform-origin: center center; will-change: transform; box-shadow: 0 16px 48px rgba(0,0,0,.34); }
+.canvas-stage.camera-free { cursor: grab; }
+.canvas-stage.camera-free.dragging { cursor: grabbing; }
+
+.completion {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  min-width: min(310px, calc(100% - 30px));
+  display: grid;
+  gap: 7px;
+  padding: 22px;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 16px;
+  text-align: center;
+  background: rgba(14, 17, 24, .92);
+  box-shadow: 0 22px 70px #000;
+  backdrop-filter: blur(14px);
+}
+.completion[hidden] { display: none; }
+.completion strong { font-size: 1.3rem; color: var(--green); }
+.completion span { color: var(--muted); font-size: .82rem; }
+.completion button { margin-top: 7px; padding: 9px; border-radius: 9px; color: #06130e; background: var(--green); font-weight: 800; }
+
+.dpad { display: none; grid-template-columns: repeat(4, 37px); gap: 5px; }
+.dpad button { width: 37px; height: 34px; border: 1px solid #3b4455; border-radius: 8px; background: #252b38; font-weight: 900; }
+.toast { position: fixed; right: 20px; bottom: 20px; z-index: 10; max-width: min(390px, calc(100% - 40px)); padding: 11px 14px; border: 1px solid #3e485c; border-radius: 11px; color: #dfe6f1; background: #181d27; box-shadow: var(--shadow); font-size: .8rem; opacity: 0; transform: translateY(10px); pointer-events: none; transition: .2s ease; }
+.toast.show { opacity: 1; transform: none; }
+
+.animation-dialog { width: min(520px, calc(100vw - 24px)); max-height: calc(100vh - 24px); padding: 0; border: 1px solid #3a4355; border-radius: 17px; color: var(--text); background: #151922; box-shadow: 0 28px 100px #000; overflow: auto; }
+.animation-dialog::backdrop { background: rgba(3, 5, 9, .72); backdrop-filter: blur(7px); }
+.animation-dialog form { margin: 0; }
+.dialog-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 17px 18px; border-bottom: 1px solid var(--line); background: rgba(21, 25, 34, .96); }
+.dialog-head h2 { margin: 0; font-size: 1.15rem; }
+.dialog-x { width: 34px; height: 34px; border: 1px solid #3a4355; border-radius: 9px; color: var(--muted); background: #252b38; cursor: pointer; font-size: 1.25rem; }
+.dialog-body { display: grid; gap: 13px; padding: 18px; }
+.dialog-actions { position: sticky; bottom: 0; display: grid; grid-template-columns: 1fr auto auto; gap: 8px; padding: 13px 18px; border-top: 1px solid var(--line); background: rgba(21, 25, 34, .97); }
+.animation-preview { height: 54px; display: grid; place-items: center; overflow: hidden; border: 1px solid #303849; border-radius: 10px; background: #0d1016; }
+.animation-preview span { display: block; width: 82%; height: 8px; border-radius: 999px; background: #7c5cff; box-shadow: 0 0 18px currentColor; }
+
+@media (max-width: 820px) {
+  body { overflow: auto; }
+  .topbar { height: 70px; padding-inline: 15px; }
+  .eyebrow { display: none; }
+  .header-actions .ghost { display: none; }
+  .coffee-link small { display: none; }
+  .coffee-link strong { font-size: .64rem; }
+  .app-shell { height: auto; min-height: calc(100vh - 70px); grid-template-columns: 1fr; padding: 9px; }
+  .controls { overflow: visible; padding: 0; order: 2; }
+  .workspace { height: min(72vh, 680px); min-height: 470px; order: 1; }
+  .dpad { display: grid; }
+  .playbar > span { display: none; }
+  .playbar { justify-content: center; }
+}
+
+@media (max-width: 430px) {
+  h1 { font-size: 1.3rem; }
+  .button { padding: 9px 11px; }
+  .coffee-link { padding: 7px; }
+  .coffee-link span { display: none; }
+  .app-shell { padding: 6px; }
+  .workspace { min-height: 420px; }
+  .status { font-size: .68rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">GENERATE · PLAY · EXPORT</p>
+      <h1>Maze Lab <span>Deluxe</span></h1>
+    </div>
+    <div class="header-actions">
+      <a class="coffee-link" href="https://buymeacoffee.com/solarfren69420" target="_blank" rel="noopener noreferrer" title="Support SolarFren on Buy Me a Coffee">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12v3h1.5a3.5 3.5 0 0 1 0 7H17v1a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5V4Zm12 5v3h1.5a1.5 1.5 0 0 0 0-3H17ZM7 6v9a3 3 0 0 0 3 3h2a3 3 0 0 0 3-3V6H7Z"/><path d="M3 21h16v2H3z"/></svg>
+        <span><strong>Fuel the labyrinth</strong><small>buymeacoffee.com/solarfren69420</small></span>
+      </a>
+      <button id="randomSeed" class="button ghost" type="button">Surprise me</button>
+      <button id="generateTop" class="button primary" type="button">Generate maze <kbd>Enter</kbd></button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <aside class="controls" aria-label="Maze controls">
+      <nav class="control-tabs" aria-label="Control sections">
+        <button class="active" data-tab-button="maze" type="button">Maze</button>
+        <button data-tab-button="style" type="button">Colors</button>
+        <button data-tab-button="play" type="button">Play</button>
+        <button data-tab-button="words" type="button">Words</button>
+        <button data-tab-button="export" type="button">Export</button>
+      </nav>
+      <details class="tab-panel active" data-tab="maze" open>
+        <summary>Maze generation</summary>
+        <div class="section-body">
+          <label class="field full">
+            <span>Algorithm and typical difficulty</span>
+            <select id="algorithm">
+              <option value="binary">Binary Tree (Very Easy)</option>
+              <option value="sidewinder">Sidewinder (Easy)</option>
+              <option value="backtracker" selected>Recursive Backtracker (Medium)</option>
+              <option value="growing">Growing Tree (Medium–Hard)</option>
+              <option value="prim">Randomized Prim (Hard)</option>
+              <option value="kruskal">Randomized Kruskal (Hard)</option>
+              <option value="wilson">Wilson (Very Hard)</option>
+              <option value="aldous">Aldous–Broder (Very Hard)</option>
+              <option value="minotaur">Minotaur Spiral (Special)</option>
+              <option value="fractal">Fractal Spiral Field (Special)</option>
+              <option value="loxodrome">Loxodrome / Rhumb Line (Special)</option>
+            </select>
+          </label>
+
+          <div class="field-grid">
+            <label class="field"><span>Width</span><input id="mazeWidth" type="number" min="2" max="300" value="25"></label>
+            <label class="field"><span>Height</span><input id="mazeHeight" type="number" min="2" max="300" value="25"></label>
+          </div>
+
+          <label class="field full">
+            <span>Maze shape</span>
+            <select id="mazeShape">
+              <option value="rectangle">Rectangle</option>
+              <option value="circle">Circle</option>
+              <option value="minotaur">Minotaur Circle</option>
+              <option value="triangle">Triangle</option>
+              <option value="diamond">Diamond</option>
+              <option value="pentagon">Pentagon</option>
+              <option value="hexagon">Hexagon</option>
+              <option value="octagon">Octagon</option>
+              <option value="polygon">Custom Regular Polygon</option>
+              <option value="star5">Five-point Star</option>
+              <option value="star">Custom Star</option>
+            </select>
+          </label>
+          <div class="field-grid">
+            <label class="field"><span>Rotation angle</span><input id="shapeRotation" type="number" step="1" value="0"></label>
+            <label class="field"><span>Angle unit</span>
+              <select id="angleUnit"><option value="deg">Degrees</option><option value="rad">Radians</option></select>
+            </label>
+          </div>
+          <div id="polygonOptions" class="field-grid is-hidden">
+            <label class="field"><span>Polygon sides</span><input id="polygonSides" type="number" min="3" max="24" value="8"></label>
+          </div>
+          <div id="starOptions" class="field-grid is-hidden">
+            <label class="field"><span>Star points</span><input id="starPoints" type="number" min="3" max="24" value="7"></label>
+            <label class="field range-field"><span><span>Inner radius</span><output id="starInnerOut">45%</output></span><input id="starInner" type="range" min="0.15" max="0.8" step="0.01" value="0.45"></label>
+          </div>
+          <div class="subpanel">
+            <p class="mini-title">Special field algorithms</p>
+            <label class="field full"><span>Fractal spiral layers</span><input id="spiralLayers" type="number" min="1" max="8" value="4"></label>
+            <label class="field full range-field"><span><span>Loxodrome bearing</span><output id="rhumbBearingOut">35°</output></span><input id="rhumbBearing" type="range" min="0" max="90" step="1" value="35"></label>
+          </div>
+
+          <label class="field full">
+            <span>Seed</span>
+            <div class="inline-control">
+              <input id="seed" type="text" value="12345" maxlength="80" spellcheck="false">
+              <button id="seedDice" class="icon-button" type="button" title="Random seed" aria-label="Random seed">↻</button>
+            </div>
+          </label>
+
+          <label class="field full range-field">
+            <span><span>Complexity / corridor bias</span><output id="complexityOut">75%</output></span>
+            <input id="complexity" type="range" min="0" max="1" step="0.01" value="0.75">
+          </label>
+          <label class="field full range-field">
+            <span><span>Braiding / extra loops</span><output id="braidOut">0%</output></span>
+            <input id="braid" type="range" min="0" max="1" step="0.01" value="0">
+          </label>
+
+          <div class="field-grid">
+            <label class="field"><span>Start</span><select id="startCorner"></select></label>
+            <label class="field"><span>Exit</span><select id="exitCorner"></select></label>
+          </div>
+        </div>
+      </details>
+
+      <details class="tab-panel" data-tab="style" open>
+        <summary>Rendering & colors</summary>
+        <div class="section-body">
+          <div class="field-grid">
+            <label class="field"><span>Export cell px</span><input id="cellSize" type="number" min="4" max="100" value="24"></label>
+            <label class="field"><span>Wall px</span><input id="wallWidth" type="number" min="1" max="20" value="3"></label>
+          </div>
+          <div id="paletteControls" class="palette-controls"></div>
+        </div>
+      </details>
+
+      <details class="tab-panel" data-tab="play" open>
+        <summary>Player & overlays</summary>
+        <div class="section-body compact">
+          <label class="switch-row"><span>Player mode</span><input id="playerMode" type="checkbox"><i></i></label>
+          <label class="switch-row"><span>Slider mode — glide to wall</span><input id="sliderMode" type="checkbox"><i></i></label>
+          <label class="switch-row"><span>Movement trail</span><input id="showTrail" type="checkbox" checked><i></i></label>
+          <label class="switch-row"><span>Solution overlay</span><input id="showSolution" type="checkbox"><i></i></label>
+          <div class="subpanel">
+            <label class="switch-row"><span>Solution glow</span><input id="solutionGlow" type="checkbox"><i></i></label>
+            <button id="glowAnimation" class="button secondary animation-launch" type="button">Animate glow…</button>
+            <label class="field full"><span>Glow color</span><input id="glowColor" class="wide-color" type="color" value="#7c5cff"></label>
+            <label class="field full range-field"><span><span>Glow blur</span><output id="glowBlurOut">18 px</output></span><input id="glowBlur" type="range" min="0" max="50" step="1" value="18"></label>
+            <label class="field full range-field"><span><span>Glow intensity</span><output id="glowIntensityOut">2.0×</output></span><input id="glowIntensity" type="range" min="0.5" max="4" step="0.1" value="2"></label>
+            <label class="switch-row"><span>Pulse glow</span><input id="glowPulse" type="checkbox"><i></i></label>
+          </div>
+          <div class="subpanel camera-panel">
+            <p class="mini-title">Map camera</p>
+            <label class="field full"><span>Camera mode</span>
+              <select id="cameraMode">
+                <option value="fit">Fit entire maze</option>
+                <option value="free">Free pan and zoom</option>
+                <option value="lock">Lock directly to player</option>
+                <option value="smooth">Smooth player follow</option>
+              </select>
+            </label>
+            <label class="field full range-field"><span><span>Camera zoom</span><output id="cameraZoomOut">100%</output></span><input id="cameraZoom" type="range" min="0.25" max="6" step="0.05" value="1"></label>
+            <div class="camera-buttons">
+              <button id="zoomOut" class="button secondary" type="button">−</button>
+              <button id="zoom100" class="button secondary" type="button">100%</button>
+              <button id="zoomIn" class="button secondary" type="button">+</button>
+              <button id="cameraFit" class="button secondary" type="button">Fit</button>
+            </div>
+            <p class="hint">Mouse wheel zooms. Drag the map in Free mode. Hotkeys: <b>F</b> fit, <b>L</b> lock, <b>0</b> reset zoom.</p>
+          </div>
+          <button id="resetPlayer" class="button secondary full-button" type="button">Reset player</button>
+        </div>
+      </details>
+
+      <details class="tab-panel" data-tab="words" open>
+        <summary>Seeded word field</summary>
+        <div class="section-body">
+          <label class="switch-row"><span>Draw seeded words</span><input id="wordsEnabled" type="checkbox"><i></i></label>
+          <label class="field full"><span>Word or phrase</span><input id="stampText" type="text" value="LABYRINTH" maxlength="80"></label>
+          <div class="field-grid">
+            <label class="field"><span>Amount</span><input id="stampCount" type="number" min="1" max="500" value="24"></label>
+            <label class="field"><span>Layer</span><select id="stampLayer"><option value="under">Behind walls</option><option value="over">Above maze</option></select></label>
+          </div>
+          <div class="field-grid">
+            <label class="field"><span>Minimum size px</span><input id="stampMinSize" type="number" min="4" max="200" value="10"></label>
+            <label class="field"><span>Maximum size px</span><input id="stampMaxSize" type="number" min="4" max="300" value="34"></label>
+          </div>
+          <label class="field full range-field"><span><span>Opacity</span><output id="stampOpacityOut">30%</output></span><input id="stampOpacity" type="range" min="0.02" max="1" step="0.01" value="0.3"></label>
+          <label class="field full range-field"><span><span>Random rotation</span><output id="stampRotationOut">45°</output></span><input id="stampRotation" type="range" min="0" max="180" step="1" value="45"></label>
+          <label class="field full"><span>Word colors</span><select id="stampColorMode"><option value="single">Single color</option><option value="rainbow">Rainbow sequence</option><option value="random">Seeded random rainbow</option></select></label>
+          <label class="field full"><span>Single color</span><input id="stampColor" class="wide-color" type="color" value="#8e44ad"></label>
+          <button id="wordAnimation" class="button secondary animation-launch" type="button">Animate words…</button>
+          <p class="hint">Placement, size, angle, and random colors repeat exactly when the maze seed and text stay the same.</p>
+        </div>
+      </details>
+
+      <details class="tab-panel" data-tab="export" open>
+        <summary>Save / export</summary>
+        <div class="section-body">
+          <label class="field full"><span>File extension</span>
+            <select id="format">
+              <option value="png">PNG — lossless (.png)</option>
+              <option value="jpeg">JPEG — compressed (.jpg)</option>
+              <option value="bmp">BMP — uncompressed (.bmp)</option>
+              <option value="gif">GIF — still or animated (.gif)</option>
+            </select>
+          </label>
+          <div id="gifOptions" class="field-grid is-hidden">
+            <label class="field"><span>GIF frames</span><input id="gifFrames" type="number" min="8" max="180" value="36"></label>
+            <label class="field"><span>Frame ms</span><input id="gifSpeed" type="number" min="20" max="500" value="55"></label>
+          </div>
+          <div class="export-actions">
+            <button id="download" class="button export full-button" type="button">Download PNG</button>
+            <button id="cancelEncoding" class="button cancel full-button is-hidden" type="button">Cancel encoding</button>
+          </div>
+          <p class="hint">Animated palettes move in the preview. GIF preserves the animation; other formats save the visible frame.</p>
+        </div>
+      </details>
+    </aside>
+
+    <section class="workspace" aria-label="Maze viewer">
+      <div class="viewer-toolbar">
+        <div id="status" class="status" aria-live="polite">Generating maze…</div>
+        <button id="solutionQuick" class="chip" type="button" aria-pressed="false">Show solution</button>
+      </div>
+      <div id="canvasStage" class="canvas-stage" tabindex="0" aria-label="Maze. Enable player mode and use arrow keys or WASD to move.">
+        <canvas id="mazeCanvas"></canvas>
+        <div id="completion" class="completion" role="status" hidden>
+          <strong>Maze complete!</strong>
+          <span id="completionText"></span>
+          <button id="playAgain" type="button">Play again</button>
+        </div>
+      </div>
+      <div class="playbar">
+        <span>Click the maze, then use arrows or WASD.</span>
+        <div class="dpad" aria-label="Touch movement controls">
+          <button data-dir="N" aria-label="Move up">↑</button>
+          <button data-dir="W" aria-label="Move left">←</button>
+          <button data-dir="S" aria-label="Move down">↓</button>
+          <button data-dir="E" aria-label="Move right">→</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="animationDialog" class="animation-dialog">
+    <form method="dialog">
+      <div class="dialog-head">
+        <div><p class="eyebrow">LAYER EFFECT</p><h2 id="animationTitle">Animate solution</h2></div>
+        <button id="animationClose" class="dialog-x" value="cancel" aria-label="Close">×</button>
+      </div>
+      <div class="dialog-body">
+        <label class="switch-row"><span>Enable animation</span><input id="animationEnabled" type="checkbox"><i></i></label>
+        <label class="field full"><span>Pattern</span>
+          <select id="animationPattern">
+            <option value="flash">Flash — hard two-tone switch</option>
+            <option value="fade">Smooth two-tone crossfade</option>
+            <option value="pulse">Two-tone pulse</option>
+            <option value="bands">Traveling color bands</option>
+            <option value="twinkle">Fractal twinkle wave</option>
+            <option value="rainbow">Rainbow shift</option>
+          </select>
+        </label>
+        <div class="field-grid">
+          <label class="field"><span>Color A</span><input id="animationColorA" class="wide-color" type="color" value="#7c5cff"></label>
+          <label class="field"><span>Color B</span><input id="animationColorB" class="wide-color" type="color" value="#ffffff"></label>
+        </div>
+        <label class="field full range-field"><span><span>Cycle duration</span><output id="animationDurationOut">1000 ms</output></span><input id="animationDuration" type="range" min="80" max="10000" step="20" value="1000"></label>
+        <label class="field full range-field"><span><span>Color-A duty</span><output id="animationDutyOut">50%</output></span><input id="animationDuty" type="range" min="5" max="95" step="1" value="50"></label>
+        <label class="field full range-field"><span><span>Bands / wave density</span><output id="animationBandsOut">6</output></span><input id="animationBands" type="range" min="1" max="24" step="1" value="6"></label>
+        <label class="field full range-field"><span><span>Phase offset</span><output id="animationPhaseOut">0°</output></span><input id="animationPhase" type="range" min="0" max="359" step="1" value="0"></label>
+        <label class="switch-row"><span>Reverse direction</span><input id="animationReverse" type="checkbox"><i></i></label>
+        <div class="animation-preview"><span id="animationPreviewLine"></span></div>
+      </div>
+      <div class="dialog-actions">
+        <button id="animationRemove" class="button cancel" type="button">Remove animation</button>
+        <button class="button ghost" value="cancel">Cancel</button>
+        <button id="animationSave" class="button primary" type="button">Apply animation</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script>
+/* gifenc 1.0.3 — MIT License */
+const { GIFEncoder, quantize, applyPalette } = (() => {
+var X={signature:"GIF",version:"89a",trailer:59,extensionIntroducer:33,applicationExtensionLabel:255,graphicControlExtensionLabel:249,imageSeparator:44,signatureSize:3,versionSize:3,globalColorTableFlagMask:128,colorResolutionMask:112,sortFlagMask:8,globalColorTableSizeMask:7,applicationIdentifierSize:8,applicationAuthCodeSize:3,disposalMethodMask:28,userInputFlagMask:2,transparentColorFlagMask:1,localColorTableFlagMask:128,interlaceFlagMask:64,idSortFlagMask:32,localColorTableSizeMask:7};function F(t=256){let e=0,s=new Uint8Array(t);return{get buffer(){return s.buffer},reset(){e=0},bytesView(){return s.subarray(0,e)},bytes(){return s.slice(0,e)},writeByte(r){n(e+1),s[e]=r,e++},writeBytes(r,o=0,i=r.length){n(e+i);for(let c=0;c<i;c++)s[e++]=r[c+o]},writeBytesView(r,o=0,i=r.byteLength){n(e+i),s.set(r.subarray(o,o+i),e),e+=i}};function n(r){var o=s.length;if(o>=r)return;var i=1024*1024;r=Math.max(r,o*(o<i?2:1.125)>>>0),o!=0&&(r=Math.max(r,256));let c=s;s=new Uint8Array(r),e>0&&s.set(c.subarray(0,e),0)}}var O=12,J=5003,lt=[0,1,3,7,15,31,63,127,255,511,1023,2047,4095,8191,16383,32767,65535];function at(t,e,s,n,r=F(512),o=new Uint8Array(256),i=new Int32Array(J),c=new Int32Array(J)){let x=i.length,a=Math.max(2,n);o.fill(0),c.fill(0),i.fill(-1);let l=0,f=0,g=a+1,h=g,b=!1,w=h,_=(1<<w)-1,u=1<<g-1,k=u+1,B=u+2,p=0,A=s[0],z=0;for(let y=x;y<65536;y*=2)++z;z=8-z,r.writeByte(a),I(u);let d=s.length;for(let y=1;y<d;y++){t:{let m=s[y],v=(m<<O)+A,M=m<<z^A;if(i[M]===v){A=c[M];break t}let V=M===0?1:x-M;for(;i[M]>=0;)if(M-=V,M<0&&(M+=x),i[M]===v){A=c[M];break t}I(A),A=m,B<1<<O?(c[M]=B++,i[M]=v):(i.fill(-1),B=u+2,b=!0,I(u))}}return I(A),I(k),r.writeByte(0),r.bytesView();function I(y){for(l&=lt[f],f>0?l|=y<<f:l=y,f+=w;f>=8;)o[p++]=l&255,p>=254&&(r.writeByte(p),r.writeBytesView(o,0,p),p=0),l>>=8,f-=8;if((B>_||b)&&(b?(w=h,_=(1<<w)-1,b=!1):(++w,_=w===O?1<<w:(1<<w)-1)),y==k){for(;f>0;)o[p++]=l&255,p>=254&&(r.writeByte(p),r.writeBytesView(o,0,p),p=0),l>>=8,f-=8;p>0&&(r.writeByte(p),r.writeBytesView(o,0,p),p=0)}}}var $=at;function D(t,e,s){return t<<8&63488|e<<2&992|s>>3}function G(t,e,s,n){return t>>4|e&240|(s&240)<<4|(n&240)<<8}function j(t,e,s){return t>>4<<8|e&240|s>>4}function R(t,e,s){return t<e?e:t>s?s:t}function T(t){return t*t}function tt(t,e,s){var n=0,r=1e100;let o=t[e],i=o.cnt,c=o.ac,x=o.rc,a=o.gc,l=o.bc;for(var f=o.fw;f!=0;f=t[f].fw){let h=t[f],b=h.cnt,w=i*b/(i+b);if(!(w>=r)){var g=0;s&&(g+=w*T(h.ac-c),g>=r)||(g+=w*T(h.rc-x),!(g>=r)&&(g+=w*T(h.gc-a),!(g>=r)&&(g+=w*T(h.bc-l),!(g>=r)&&(r=g,n=f))))}}o.err=r,o.nn=n}function Q(){return{ac:0,rc:0,gc:0,bc:0,cnt:0,nn:0,fw:0,bk:0,tm:0,mtm:0,err:0}}function ut(t,e){let s=e==="rgb444"?4096:65536,n=new Array(s),r=t.length;if(e==="rgba4444")for(let o=0;o<r;++o){let i=t[o],c=i>>24&255,x=i>>16&255,a=i>>8&255,l=i&255,f=G(l,a,x,c),g=f in n?n[f]:n[f]=Q();g.rc+=l,g.gc+=a,g.bc+=x,g.ac+=c,g.cnt++}else if(e==="rgb444")for(let o=0;o<r;++o){let i=t[o],c=i>>16&255,x=i>>8&255,a=i&255,l=j(a,x,c),f=l in n?n[l]:n[l]=Q();f.rc+=a,f.gc+=x,f.bc+=c,f.cnt++}else for(let o=0;o<r;++o){let i=t[o],c=i>>16&255,x=i>>8&255,a=i&255,l=D(a,x,c),f=l in n?n[l]:n[l]=Q();f.rc+=a,f.gc+=x,f.bc+=c,f.cnt++}return n}function H(t,e,s={}){let{format:n="rgb565",clearAlpha:r=!0,clearAlphaColor:o=0,clearAlphaThreshold:i=0,oneBitAlpha:c=!1}=s;if(!t||!t.buffer)throw new Error("quantize() expected RGBA Uint8Array data");if(!(t instanceof Uint8Array)&&!(t instanceof Uint8ClampedArray))throw new Error("quantize() expected RGBA Uint8Array data");let x=new Uint32Array(t.buffer),a=s.useSqrt!==!1,l=n==="rgba4444",f=ut(x,n),g=f.length,h=g-1,b=new Uint32Array(g+1);for(var w=0,u=0;u<g;++u){let C=f[u];if(C!=null){var _=1/C.cnt;l&&(C.ac*=_),C.rc*=_,C.gc*=_,C.bc*=_,f[w++]=C}}T(e)/w<.022&&(a=!1);for(var u=0;u<w-1;++u)f[u].fw=u+1,f[u+1].bk=u,a&&(f[u].cnt=Math.sqrt(f[u].cnt));a&&(f[u].cnt=Math.sqrt(f[u].cnt));var k,B,p;for(u=0;u<w;++u){tt(f,u,!1);var A=f[u].err;for(B=++b[0];B>1&&(p=B>>1,!(f[k=b[p]].err<=A));B=p)b[B]=k;b[B]=u}var z=w-e;for(u=0;u<z;){for(var d;;){var I=b[1];if(d=f[I],d.tm>=d.mtm&&f[d.nn].mtm<=d.tm)break;d.mtm==h?I=b[1]=b[b[0]--]:(tt(f,I,!1),d.tm=u);var A=f[I].err;for(B=1;(p=B+B)<=b[0]&&(p<b[0]&&f[b[p]].err>f[b[p+1]].err&&p++,!(A<=f[k=b[p]].err));B=p)b[B]=k;b[B]=I}var y=f[d.nn],m=d.cnt,v=y.cnt,_=1/(m+v);l&&(d.ac=_*(m*d.ac+v*y.ac)),d.rc=_*(m*d.rc+v*y.rc),d.gc=_*(m*d.gc+v*y.gc),d.bc=_*(m*d.bc+v*y.bc),d.cnt+=y.cnt,d.mtm=++u,f[y.bk].fw=y.fw,f[y.fw].bk=y.bk,y.mtm=h}let M=[];var V=0;for(u=0;;++V){let L=R(Math.round(f[u].rc),0,255),C=R(Math.round(f[u].gc),0,255),Y=R(Math.round(f[u].bc),0,255),E=255;if(l){if(E=R(Math.round(f[u].ac),0,255),c){let st=typeof c=="number"?c:127;E=E<=st?0:255}r&&E<=i&&(L=C=Y=o,E=0)}let K=l?[L,C,Y,E]:[L,C,Y];if(xt(M,K)||M.push(K),(u=f[u].fw)==0)break}return M}function xt(t,e){for(let s=0;s<t.length;s++){let n=t[s],r=n[0]===e[0]&&n[1]===e[1]&&n[2]===e[2],o=n.length>=4&&e.length>=4?n[3]===e[3]:!0;if(r&&o)return!0}return!1}function U(t,e){var s=0,n;for(n=0;n<t.length;n++){let r=t[n]-e[n];s+=r*r}return s}function P(t,e){return e>1?Math.round(t/e)*e:t}function et(t,{roundRGB:e=5,roundAlpha:s=10,oneBitAlpha:n=null}={}){let r=new Uint32Array(t.buffer);for(let o=0;o<r.length;o++){let i=r[o],c=i>>24&255,x=i>>16&255,a=i>>8&255,l=i&255;if(c=P(c,s),n){let f=typeof n=="number"?n:127;c=c<=f?0:255}l=P(l,e),a=P(a,e),x=P(x,e),r[o]=c<<24|x<<16|a<<8|l<<0}}function nt(t,e,s="rgb565"){if(!t||!t.buffer)throw new Error("quantize() expected RGBA Uint8Array data");if(!(t instanceof Uint8Array)&&!(t instanceof Uint8ClampedArray))throw new Error("quantize() expected RGBA Uint8Array data");if(e.length>256)throw new Error("applyPalette() only works with 256 colors or less");let n=new Uint32Array(t.buffer),r=n.length,o=s==="rgb444"?4096:65536,i=new Uint8Array(r),c=new Array(o),x=s==="rgba4444";if(s==="rgba4444")for(let a=0;a<r;a++){let l=n[a],f=l>>24&255,g=l>>16&255,h=l>>8&255,b=l&255,w=G(b,h,g,f),_=w in c?c[w]:c[w]=gt(b,h,g,f,e);i[a]=_}else{let a=s==="rgb444"?j:D;for(let l=0;l<r;l++){let f=n[l],g=f>>16&255,h=f>>8&255,b=f&255,w=a(b,h,g),_=w in c?c[w]:c[w]=bt(b,h,g,e);i[l]=_}}return i}function gt(t,e,s,n,r){let o=0,i=1e100;for(let c=0;c<r.length;c++){let x=r[c],a=x[3],l=q(a-n);if(l>i)continue;let f=x[0];if(l+=q(f-t),l>i)continue;let g=x[1];if(l+=q(g-e),l>i)continue;let h=x[2];l+=q(h-s),!(l>i)&&(i=l,o=c)}return o}function bt(t,e,s,n){let r=0,o=1e100;for(let i=0;i<n.length;i++){let c=n[i],x=c[0],a=q(x-t);if(a>o)continue;let l=c[1];if(a+=q(l-e),a>o)continue;let f=c[2];a+=q(f-s),!(a>o)&&(o=a,r=i)}return r}function rt(t,e,s=5){if(!t.length||!e.length)return;let n=t.map(i=>i.slice(0,3)),r=s*s,o=t[0].length;for(let i=0;i<e.length;i++){let c=e[i];c.length<o?c=[c[0],c[1],c[2],255]:c.length>o?c=c.slice(0,3):c=c.slice();let x=N(n,c.slice(0,3),U),a=x[0],l=x[1];l>0&&l<=r&&(t[a]=c)}}function q(t){return t*t}function W(t,e,s=U){let n=Infinity,r=-1;for(let o=0;o<t.length;o++){let i=t[o],c=s(e,i);c<n&&(n=c,r=o)}return r}function N(t,e,s=U){let n=Infinity,r=-1;for(let o=0;o<t.length;o++){let i=t[o],c=s(e,i);c<n&&(n=c,r=o)}return[r,n]}function ot(t,e,s=U){return t[W(t,e,s)]}function ct(t={}){let{initialCapacity:e=4096,auto:s=!0}=t,n=F(e),r=5003,o=new Uint8Array(256),i=new Int32Array(r),c=new Int32Array(r),x=!1;return{reset(){n.reset(),x=!1},finish(){n.writeByte(X.trailer)},bytes(){return n.bytes()},bytesView(){return n.bytesView()},get buffer(){return n.buffer},get stream(){return n},writeHeader:a,writeFrame(l,f,g,h={}){let{transparent:b=!1,transparentIndex:w=0,delay:_=0,palette:u=null,repeat:k=0,colorDepth:B=8,dispose:p=-1}=h,A=!1;if(s?x||(A=!0,a(),x=!0):A=Boolean(h.first),f=Math.max(0,Math.floor(f)),g=Math.max(0,Math.floor(g)),A){if(!u)throw new Error("First frame must include a { palette } option");pt(n,f,g,u,B),it(n,u),k>=0&&dt(n,k)}let z=Math.round(_/10);wt(n,p,z,b,w);let d=Boolean(u)&&!A;ht(n,f,g,d?u:null),d&&it(n,u),yt(n,l,f,g,B,o,i,c)}};function a(){ft(n,"GIF89a")}}function wt(t,e,s,n,r){t.writeByte(33),t.writeByte(249),t.writeByte(4),r<0&&(r=0,n=!1);var o,i;n?(o=1,i=2):(o=0,i=0),e>=0&&(i=e&7),i<<=2;let c=0;t.writeByte(0|i|c|o),S(t,s),t.writeByte(r||0),t.writeByte(0)}function pt(t,e,s,n,r=8){let o=1,i=0,c=Z(n.length)-1,x=o<<7|r-1<<4|i<<3|c,a=0,l=0;S(t,e),S(t,s),t.writeBytes([x,a,l])}function dt(t,e){t.writeByte(33),t.writeByte(255),t.writeByte(11),ft(t,"NETSCAPE2.0"),t.writeByte(3),t.writeByte(1),S(t,e),t.writeByte(0)}function it(t,e){let s=1<<Z(e.length);for(let n=0;n<s;n++){let r=[0,0,0];n<e.length&&(r=e[n]),t.writeByte(r[0]),t.writeByte(r[1]),t.writeByte(r[2])}}function ht(t,e,s,n){if(t.writeByte(44),S(t,0),S(t,0),S(t,e),S(t,s),n){let r=0,o=0,i=Z(n.length)-1;t.writeByte(128|r|o|0|i)}else t.writeByte(0)}function yt(t,e,s,n,r=8,o,i,c){$(s,n,e,r,t,o,i,c)}function S(t,e){t.writeByte(e&255),t.writeByte(e>>8&255)}function ft(t,e){for(var s=0;s<e.length;s++)t.writeByte(e.charCodeAt(s))}function Z(t){return Math.max(Math.ceil(Math.log2(t)),1)}var Bt=ct;
+
+
+return { GIFEncoder: ct, quantize: H, applyPalette: nt };
+})();
+const N = 1, E = 2, S = 4, W = 8;
+const DIRS = [N, E, S, W];
+const DX = { [N]: 0, [E]: 1, [S]: 0, [W]: -1 };
+const DY = { [N]: -1, [E]: 0, [S]: 1, [W]: 0 };
+const OPP = { [N]: S, [E]: W, [S]: N, [W]: E };
+
+const CORNERS = ["Top Left", "Top Right", "Bottom Left", "Bottom Right", "Center"];
+const STATIC_COLORS = {
+  White: "#FFFFFF", Black: "#111116", Slate: "#303640", Graphite: "#1D2028",
+  Gray: "#808080", Silver: "#C8CCD2", Red: "#E53935", Crimson: "#B71C1C",
+  Orange: "#FB8C00", Amber: "#FFB300", Yellow: "#FDD835", Lime: "#7CB342",
+  Green: "#2EAD5B", Emerald: "#008F6B", Teal: "#00897B", Cyan: "#00ACC1",
+  "Sky Blue": "#42A5F5", Blue: "#246BCE", Indigo: "#3949AB", Purple: "#8E44AD",
+  Magenta: "#D81B60", Pink: "#EC407A", Brown: "#795548", Cream: "#FFF3D6"
+};
+const SPECIAL_COLORS = ["Rainbow", "Rainbow Reverse", "Animated Rainbow", "Animated Rainbow Reverse", "Custom…"];
+const PALETTES = ["Board", "Walls", "Trail", "Solution", "Player", "Start", "Exit"];
+const ANIMATION_TARGETS = [...PALETTES, "Words", "Glow"];
+const DEFAULT_PALETTES = {
+  Board: ["White", "#FFFFFF"], Walls: ["Black", "#111116"], Trail: ["Sky Blue", "#42A5F5"],
+  Solution: ["Purple", "#8E44AD"], Player: ["Red", "#E53935"], Start: ["Green", "#2EAD5B"], Exit: ["Orange", "#FB8C00"]
+};
+const ALGORITHM_NAMES = {
+  binary: "Binary Tree (Very Easy)", sidewinder: "Sidewinder (Easy)",
+  backtracker: "Recursive Backtracker (Medium)", growing: "Growing Tree (Medium–Hard)",
+  prim: "Randomized Prim (Hard)", kruskal: "Randomized Kruskal (Hard)",
+  wilson: "Wilson (Very Hard)", aldous: "Aldous–Broder (Very Hard)",
+  minotaur: "Minotaur Spiral (Special)", fractal: "Fractal Spiral Field (Special)",
+  loxodrome: "Loxodrome / Rhumb Line (Special)"
+};
+
+const $ = (id) => document.getElementById(id);
+const els = {
+  algorithm: $("algorithm"), width: $("mazeWidth"), height: $("mazeHeight"), seed: $("seed"),
+  shape: $("mazeShape"), rotation: $("shapeRotation"), angleUnit: $("angleUnit"),
+  polygonSides: $("polygonSides"), polygonOptions: $("polygonOptions"), starPoints: $("starPoints"),
+  starInner: $("starInner"), starInnerOut: $("starInnerOut"), starOptions: $("starOptions"),
+  spiralLayers: $("spiralLayers"), rhumbBearing: $("rhumbBearing"), rhumbBearingOut: $("rhumbBearingOut"),
+  complexity: $("complexity"), braid: $("braid"), complexityOut: $("complexityOut"), braidOut: $("braidOut"),
+  start: $("startCorner"), exit: $("exitCorner"), cellSize: $("cellSize"), wallWidth: $("wallWidth"),
+  playerMode: $("playerMode"), sliderMode: $("sliderMode"), showTrail: $("showTrail"), showSolution: $("showSolution"),
+  cameraMode: $("cameraMode"), cameraZoom: $("cameraZoom"), cameraZoomOut: $("cameraZoomOut"),
+  zoomOut: $("zoomOut"), zoom100: $("zoom100"), zoomIn: $("zoomIn"), cameraFit: $("cameraFit"),
+  solutionGlow: $("solutionGlow"), glowColor: $("glowColor"), glowBlur: $("glowBlur"),
+  glowBlurOut: $("glowBlurOut"), glowIntensity: $("glowIntensity"), glowIntensityOut: $("glowIntensityOut"), glowPulse: $("glowPulse"),
+  wordsEnabled: $("wordsEnabled"), stampText: $("stampText"), stampCount: $("stampCount"), stampLayer: $("stampLayer"),
+  stampMinSize: $("stampMinSize"), stampMaxSize: $("stampMaxSize"), stampOpacity: $("stampOpacity"),
+  stampOpacityOut: $("stampOpacityOut"), stampRotation: $("stampRotation"), stampRotationOut: $("stampRotationOut"),
+  stampColorMode: $("stampColorMode"), stampColor: $("stampColor"),
+  animationDialog: $("animationDialog"), animationTitle: $("animationTitle"), animationEnabled: $("animationEnabled"),
+  animationPattern: $("animationPattern"), animationColorA: $("animationColorA"), animationColorB: $("animationColorB"),
+  animationDuration: $("animationDuration"), animationDurationOut: $("animationDurationOut"), animationDuty: $("animationDuty"),
+  animationDutyOut: $("animationDutyOut"), animationBands: $("animationBands"), animationBandsOut: $("animationBandsOut"),
+  animationPhase: $("animationPhase"), animationPhaseOut: $("animationPhaseOut"), animationReverse: $("animationReverse"),
+  animationPreviewLine: $("animationPreviewLine"), animationSave: $("animationSave"), animationRemove: $("animationRemove"),
+  glowAnimation: $("glowAnimation"), wordAnimation: $("wordAnimation"),
+  format: $("format"), gifFrames: $("gifFrames"), gifSpeed: $("gifSpeed"), gifOptions: $("gifOptions"),
+  download: $("download"), cancelEncoding: $("cancelEncoding"), canvas: $("mazeCanvas"), stage: $("canvasStage"), status: $("status"),
+  completion: $("completion"), completionText: $("completionText"), solutionQuick: $("solutionQuick"), toast: $("toast")
+};
+
+const state = {
+  maze: null,
+  player: 0,
+  trail: [],
+  moves: 0,
+  complete: false,
+  phase: 0,
+  palettes: {},
+  animations: {},
+  editingAnimation: null,
+  solution: [],
+  previewCell: 16,
+  renderPending: false,
+  exporting: false,
+  cancelExport: false,
+  slideTimer: 0,
+  sliding: false,
+  startCell: 0,
+  exitCell: 0,
+  camera: { zoom: 1, panX: 0, panY: 0, targetX: 0, targetY: 0, dragging: false, dragX: 0, dragY: 0, originX: 0, originY: 0 },
+  previewMetrics: null
+};
+
+function clamp(value, min, max) { return Math.min(max, Math.max(min, Number(value))); }
+
+function hashSeed(text) {
+  const value = String(text).trim();
+  if (/^-?\d+$/.test(value)) return Number(BigInt(value) & 0xffffffffn) >>> 0;
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+class RNG {
+  constructor(seed) { this.state = seed >>> 0; }
+  next() {
+    let t = this.state += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+  int(max) { return Math.floor(this.next() * max); }
+  pick(array) { return array[this.int(array.length)]; }
+  shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = this.int(i + 1);
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+}
+
+function pointInPolygon(x, y, vertices) {
+  let inside = false;
+  for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+    const [xi, yi] = vertices[i], [xj, yj] = vertices[j];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+function rotatedPoint(x, y, angle) {
+  const c = Math.cos(angle), s = Math.sin(angle);
+  return [x * c - y * s, x * s + y * c];
+}
+
+function retainLargestComponent(mask, width, height) {
+  const visited = new Uint8Array(mask.length), queue = new Int32Array(mask.length);
+  let largest = [];
+  for (let start = 0; start < mask.length; start++) {
+    if (!mask[start] || visited[start]) continue;
+    let head = 0, tail = 0; queue[tail++] = start; visited[start] = 1; const component = [];
+    while (head < tail) {
+      const id = queue[head++]; component.push(id); const x = id % width, y = Math.floor(id / width);
+      for (const [nx, ny] of [[x, y - 1], [x + 1, y], [x, y + 1], [x - 1, y]]) {
+        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+        const next = ny * width + nx;
+        if (mask[next] && !visited[next]) { visited[next] = 1; queue[tail++] = next; }
+      }
+    }
+    if (component.length > largest.length) largest = component;
+  }
+  mask.fill(0); for (const id of largest) mask[id] = 1;
+  if (!largest.length) mask[Math.floor(height / 2) * width + Math.floor(width / 2)] = 1;
+  return mask;
+}
+
+function buildShapeMask(width, height, shape, rotation, polygonSides, starPoints, starInner) {
+  const mask = new Uint8Array(width * height);
+  if (shape === "rectangle" && Math.abs(rotation) < 1e-10) { mask.fill(1); return mask; }
+  const cx = (width - 1) / 2, cy = (height - 1) / 2;
+  const radius = Math.max(1, Math.min(width, height) * .48);
+  let vertices = null;
+  if (shape === "rectangle") {
+    const rx = Math.max(.5, width * .475), ry = Math.max(.5, height * .475);
+    vertices = [[-rx,-ry],[rx,-ry],[rx,ry],[-rx,ry]].map(([x,y]) => rotatedPoint(x, y, rotation));
+  } else if (!["circle", "minotaur"].includes(shape)) {
+    const fixedSides = { triangle: 3, diamond: 4, pentagon: 5, hexagon: 6, octagon: 8 }[shape];
+    const isStar = shape === "star" || shape === "star5";
+    const count = isStar ? (shape === "star5" ? 5 : starPoints) : (fixedSides || polygonSides);
+    const total = isStar ? count * 2 : count;
+    vertices = Array.from({ length: total }, (_, i) => {
+      const r = isStar && i % 2 ? radius * starInner : radius;
+      const angle = rotation - Math.PI / 2 + i * Math.PI * 2 / total;
+      return [Math.cos(angle) * r, Math.sin(angle) * r];
+    });
+  }
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    const px = x - cx, py = y - cy;
+    mask[y * width + x] = (["circle", "minotaur"].includes(shape)
+      ? px * px + py * py <= radius * radius
+      : pointInPolygon(px, py, vertices)) ? 1 : 0;
+  }
+  return retainLargestComponent(mask, width, height);
+}
+
+class Maze {
+  constructor(width, height, seed, mask = null) {
+    this.width = width;
+    this.height = height;
+    this.size = width * height;
+    this.seed = seed;
+    this.grid = new Uint8Array(this.size);
+    this.active = mask || new Uint8Array(this.size).fill(1);
+    this.activeIds = [];
+    for (let id = 0; id < this.size; id++) if (this.active[id]) this.activeIds.push(id);
+    this.activeCount = this.activeIds.length;
+    this.rng = new RNG(seed);
+  }
+  id(x, y) { return y * this.width + x; }
+  x(id) { return id % this.width; }
+  y(id) { return Math.floor(id / this.width); }
+  neighbor(id, dir) {
+    const x = this.x(id) + DX[dir], y = this.y(id) + DY[dir];
+    if (x < 0 || y < 0 || x >= this.width || y >= this.height) return -1;
+    const next = this.id(x, y);
+    return this.active[next] ? next : -1;
+  }
+  neighbors(id) {
+    const out = [];
+    for (const dir of DIRS) {
+      const next = this.neighbor(id, dir);
+      if (next >= 0) out.push([dir, next]);
+    }
+    return out;
+  }
+  connected(id) {
+    const out = [], passages = this.grid[id];
+    for (const dir of DIRS) if (passages & dir) out.push(this.neighbor(id, dir));
+    return out;
+  }
+  carve(a, b, dir = 0) {
+    if (!dir) {
+      const delta = b - a;
+      dir = delta === -this.width ? N : delta === 1 ? E : delta === this.width ? S : W;
+    }
+    this.grid[a] |= dir;
+    this.grid[b] |= OPP[dir];
+  }
+  binaryTree() {
+    for (const id of this.activeIds) {
+      const options = [], north = this.neighbor(id, N), east = this.neighbor(id, E);
+      if (north >= 0) options.push([N, north]);
+      if (east >= 0) options.push([E, east]);
+      if (options.length) { const [dir, next] = this.rng.pick(options); this.carve(id, next, dir); }
+    }
+  }
+  sidewinder() {
+    for (let y = 0; y < this.height; y++) {
+      let run = [];
+      for (let x = 0; x < this.width; x++) {
+        const id = this.id(x, y);
+        if (!this.active[id]) { run = []; continue; }
+        run.push(id);
+        const east = this.neighbor(id, E);
+        const northMembers = run.filter(member => this.neighbor(member, N) >= 0);
+        const close = east < 0 || (northMembers.length && this.rng.next() < .5);
+        if (close) {
+          if (northMembers.length) { const member = this.rng.pick(northMembers); this.carve(member, this.neighbor(member, N), N); }
+          run = [];
+        } else this.carve(id, east, E);
+      }
+    }
+  }
+  backtracker() {
+    const start = this.rng.pick(this.activeIds), visited = new Uint8Array(this.size), stack = [start];
+    visited[start] = 1;
+    while (stack.length) {
+      const current = stack[stack.length - 1];
+      const candidates = this.neighbors(current).filter(([, n]) => !visited[n]);
+      if (!candidates.length) { stack.pop(); continue; }
+      const [dir, next] = this.rng.pick(candidates);
+      this.carve(current, next, dir); visited[next] = 1; stack.push(next);
+    }
+  }
+  growingTree(newestBias) {
+    const start = this.rng.pick(this.activeIds), visited = new Uint8Array(this.size), active = [start];
+    visited[start] = 1;
+    while (active.length) {
+      const index = this.rng.next() < newestBias ? active.length - 1 : this.rng.int(active.length);
+      const current = active[index], candidates = this.neighbors(current).filter(([, n]) => !visited[n]);
+      if (candidates.length) {
+        const [dir, next] = this.rng.pick(candidates);
+        this.carve(current, next, dir); visited[next] = 1; active.push(next);
+      } else active.splice(index, 1);
+    }
+  }
+  prim() {
+    const start = this.rng.pick(this.activeIds), visited = new Uint8Array(this.size), frontier = [];
+    const add = (id) => { for (const [dir, next] of this.neighbors(id)) if (!visited[next]) frontier.push([id, dir, next]); };
+    visited[start] = 1; add(start);
+    while (frontier.length) {
+      const index = this.rng.int(frontier.length), edge = frontier[index];
+      frontier[index] = frontier[frontier.length - 1]; frontier.pop();
+      const [from, dir, next] = edge;
+      if (visited[next]) continue;
+      this.carve(from, next, dir); visited[next] = 1; add(next);
+    }
+  }
+  kruskal() {
+    const parent = new Int32Array(this.size), rank = new Uint8Array(this.size), edges = [];
+    for (let i = 0; i < this.size; i++) parent[i] = i;
+    const find = (item) => { let root = item; while (parent[root] !== root) root = parent[root]; while (parent[item] !== item) { const p = parent[item]; parent[item] = root; item = p; } return root; };
+    const union = (a, b) => { let ra = find(a), rb = find(b); if (ra === rb) return false; if (rank[ra] < rank[rb]) [ra, rb] = [rb, ra]; parent[rb] = ra; if (rank[ra] === rank[rb]) rank[ra]++; return true; };
+    for (const id of this.activeIds) {
+      const east = this.neighbor(id, E), south = this.neighbor(id, S);
+      if (east >= 0) edges.push([id, E, east]);
+      if (south >= 0) edges.push([id, S, south]);
+    }
+    this.rng.shuffle(edges);
+    for (const [a, dir, b] of edges) if (union(a, b)) this.carve(a, b, dir);
+  }
+  wilson() {
+    const unvisited = this.activeIds.slice();
+    const positions = new Int32Array(this.size); positions.fill(-1); for (let i = 0; i < unvisited.length; i++) positions[unvisited[i]] = i;
+    const inTree = new Uint8Array(this.size);
+    const remove = (id) => {
+      const at = positions[id]; if (at < 0) return;
+      const last = unvisited.pop();
+      if (at < unvisited.length) { unvisited[at] = last; positions[last] = at; }
+      positions[id] = -1;
+    };
+    const first = this.rng.pick(unvisited); inTree[first] = 1; remove(first);
+    while (unvisited.length) {
+      const start = this.rng.pick(unvisited), path = [start], pathPos = new Map([[start, 0]]);
+      let current = start;
+      while (!inTree[current]) {
+        const [, next] = this.rng.pick(this.neighbors(current));
+        if (pathPos.has(next)) {
+          const keep = pathPos.get(next);
+          for (let i = path.length - 1; i > keep; i--) pathPos.delete(path[i]);
+          path.length = keep + 1;
+        } else { pathPos.set(next, path.length); path.push(next); }
+        current = next;
+      }
+      for (let i = 0; i < path.length - 1; i++) { this.carve(path[i], path[i + 1]); inTree[path[i]] = 1; remove(path[i]); }
+      inTree[path[path.length - 1]] = 1; remove(path[path.length - 1]);
+    }
+  }
+  aldousBroder() {
+    let current = this.rng.pick(this.activeIds), count = 1;
+    const visited = new Uint8Array(this.size); visited[current] = 1;
+    while (count < this.activeCount) {
+      const [dir, next] = this.rng.pick(this.neighbors(current));
+      if (!visited[next]) { this.carve(current, next, dir); visited[next] = 1; count++; }
+      current = next;
+    }
+  }
+  minotaurSpiral() {
+    const cx = (this.width - 1) / 2, cy = (this.height - 1) / 2;
+    const start = this.activeIds.reduce((best, id) => {
+      const d = (this.x(id) - cx) ** 2 + (this.y(id) - cy) ** 2;
+      return d < best.distance ? { id, distance: d } : best;
+    }, { id: this.activeIds[0], distance: Infinity }).id;
+    const visited = new Uint8Array(this.size), stack = [start]; visited[start] = 1;
+    while (stack.length) {
+      const current = stack[stack.length - 1], x = this.x(current) - cx, y = this.y(current) - cy;
+      const radius = Math.max(1, Math.hypot(x, y)), clockwise = Math.floor(radius / 2) % 2 ? -1 : 1;
+      const candidates = this.neighbors(current).filter(([, next]) => !visited[next]);
+      if (!candidates.length) { stack.pop(); continue; }
+      const weighted = candidates.map(([dir, next]) => {
+        const mx = DX[dir], my = DY[dir];
+        const tangent = Math.max(0, (mx * -y + my * x) * clockwise / radius);
+        const lateral = Math.abs(mx * -y + my * x) / radius;
+        const radial = Math.abs(mx * x + my * y) / radius;
+        return { dir, next, weight: 1 + tangent * 7 + lateral * 3 + radial * .35 };
+      });
+      let roll = this.rng.next() * weighted.reduce((sum, item) => sum + item.weight, 0), chosen = weighted[0];
+      for (const item of weighted) { roll -= item.weight; if (roll <= 0) { chosen = item; break; } }
+      this.carve(current, chosen.next, chosen.dir); visited[chosen.next] = 1; stack.push(chosen.next);
+    }
+  }
+  fieldBiasedTree(vectorAt) {
+    const start = this.rng.pick(this.activeIds), visited = new Uint8Array(this.size), stack = [start]; visited[start] = 1;
+    while (stack.length) {
+      const current = stack[stack.length - 1], candidates = this.neighbors(current).filter(([, next]) => !visited[next]);
+      if (!candidates.length) { stack.pop(); continue; }
+      const [vx, vy] = vectorAt(this.x(current), this.y(current));
+      const weighted = candidates.map(([dir, next]) => ({ dir, next, weight: 1 + Math.abs(DX[dir] * vx + DY[dir] * vy) * 9 }));
+      let roll = this.rng.next() * weighted.reduce((sum, item) => sum + item.weight, 0), chosen = weighted[0];
+      for (const item of weighted) { roll -= item.weight; if (roll <= 0) { chosen = item; break; } }
+      this.carve(current, chosen.next, chosen.dir); visited[chosen.next] = 1; stack.push(chosen.next);
+    }
+  }
+  fractalSpiral(layers = 4) {
+    const cx = (this.width - 1) / 2, cy = (this.height - 1) / 2, scale = Math.max(1, Math.min(this.width, this.height) / 2);
+    this.fieldBiasedTree((x, y) => {
+      const dx = (x - cx) / scale, dy = (y - cy) / scale, r = Math.hypot(dx, dy), theta = Math.atan2(dy, dx);
+      let ripple = 0, amplitude = .72;
+      for (let layer = 0; layer < layers; layer++) {
+        const frequency = 2 ** layer;
+        ripple += Math.sin(theta * frequency + r * Math.PI * (2.5 + layer)) * amplitude;
+        amplitude *= .48;
+      }
+      const angle = theta + Math.PI / 2 + ripple * .62 + r * 1.8;
+      return [Math.cos(angle), Math.sin(angle)];
+    });
+  }
+  loxodrome(bearing = 35 * Math.PI / 180) {
+    const cx = (this.width - 1) / 2, cy = (this.height - 1) / 2;
+    this.fieldBiasedTree((x, y) => {
+      const dx = x - cx, dy = y - cy, length = Math.max(1, Math.hypot(dx, dy));
+      const rx = dx / length, ry = dy / length, tx = -ry, ty = rx;
+      return [rx * Math.cos(bearing) + tx * Math.sin(bearing), ry * Math.cos(bearing) + ty * Math.sin(bearing)];
+    });
+  }
+  connectComponents() {
+    const parent = new Int32Array(this.size), rank = new Uint8Array(this.size);
+    for (let i = 0; i < this.size; i++) parent[i] = i;
+    const find = (item) => { let root = item; while (parent[root] !== root) root = parent[root]; while (parent[item] !== item) { const p = parent[item]; parent[item] = root; item = p; } return root; };
+    const union = (a, b) => { let ra = find(a), rb = find(b); if (ra === rb) return false; if (rank[ra] < rank[rb]) [ra, rb] = [rb, ra]; parent[rb] = ra; if (rank[ra] === rank[rb]) rank[ra]++; return true; };
+    const closed = [];
+    for (const id of this.activeIds) for (const dir of [E, S]) {
+      const next = this.neighbor(id, dir); if (next < 0) continue;
+      if (this.grid[id] & dir) union(id, next); else closed.push([id, dir, next]);
+    }
+    this.rng.shuffle(closed);
+    for (const [a, dir, b] of closed) if (union(a, b)) this.carve(a, b, dir);
+  }
+  braid(amount) {
+    if (amount <= 0) return;
+    const deadEnds = [];
+    for (const id of this.activeIds) if (this.connected(id).length === 1) deadEnds.push(id);
+    this.rng.shuffle(deadEnds);
+    for (const id of deadEnds) {
+      if (this.rng.next() > amount) continue;
+      const closed = this.neighbors(id).filter(([dir]) => !(this.grid[id] & dir));
+      if (!closed.length) continue;
+      const preferred = closed.filter(([, next]) => this.connected(next).length === 1);
+      const [dir, next] = this.rng.pick(preferred.length ? preferred : closed);
+      this.carve(id, next, dir);
+    }
+  }
+  solve(start, end) {
+    const came = new Int32Array(this.size); came.fill(-2); came[start] = -1;
+    const queue = new Int32Array(this.size); let head = 0, tail = 0; queue[tail++] = start;
+    while (head < tail) {
+      const current = queue[head++]; if (current === end) break;
+      for (const next of this.connected(current)) if (came[next] === -2) { came[next] = current; queue[tail++] = next; }
+    }
+    if (came[end] === -2) return [];
+    const path = []; for (let current = end; current !== -1; current = came[current]) path.push(current);
+    return path.reverse();
+  }
+}
+
+function setupControls() {
+  for (const name of ANIMATION_TARGETS) {
+    const base = DEFAULT_PALETTES[name]?.[1] || (name === "Words" ? "#8e44ad" : "#7c5cff");
+    state.animations[name] = { enabled: false, pattern: "flash", colorA: base, colorB: "#ffffff", duration: 1000, duty: 50, bands: 6, phase: 0, reverse: false };
+  }
+  for (const corner of CORNERS) {
+    els.start.add(new Option(corner, corner));
+    els.exit.add(new Option(corner, corner));
+  }
+  els.start.value = "Top Left"; els.exit.value = "Bottom Right";
+  const container = $("paletteControls");
+  for (const name of PALETTES) {
+    const [mode, custom] = DEFAULT_PALETTES[name]; state.palettes[name] = { mode, custom };
+    const row = document.createElement("label"); row.className = "palette-row";
+    const label = document.createElement("span"); label.textContent = name;
+    const select = document.createElement("select"); select.dataset.palette = name; select.setAttribute("aria-label", `${name} palette`);
+    for (const option of [...Object.keys(STATIC_COLORS), ...SPECIAL_COLORS]) select.add(new Option(option, option));
+    select.value = mode;
+    const color = document.createElement("input"); color.type = "color"; color.value = custom; color.dataset.custom = name; color.title = `Custom ${name.toLowerCase()} color`;
+    color.hidden = mode !== "Custom…";
+    const animate = document.createElement("button"); animate.type = "button"; animate.className = "anim-button"; animate.textContent = "Anim"; animate.dataset.animateTarget = name; animate.title = `Animate ${name.toLowerCase()}`;
+    row.append(label, select, color, animate); container.append(row);
+    select.addEventListener("change", () => { state.palettes[name].mode = select.value; color.hidden = select.value !== "Custom…"; scheduleRender(); });
+    color.addEventListener("input", () => { state.palettes[name].custom = color.value; if (select.value === "Custom…") scheduleRender(); });
+    animate.addEventListener("click", () => openAnimationDialog(name));
+  }
+}
+
+function rotationRadians() {
+  const value = Number(els.rotation.value) || 0;
+  return els.angleUnit.value === "rad" ? value : value * Math.PI / 180;
+}
+
+function nearestActivePoint(name) {
+  const m = state.maze, targets = {
+    "Top Left": [0, 0], "Top Right": [m.width - 1, 0],
+    "Bottom Left": [0, m.height - 1], "Bottom Right": [m.width - 1, m.height - 1],
+    Center: [(m.width - 1) / 2, (m.height - 1) / 2]
+  };
+  const [tx, ty] = targets[name];
+  return m.activeIds.reduce((best, id) => {
+    const distance = (m.x(id) - tx) ** 2 + (m.y(id) - ty) ** 2;
+    return distance < best.distance ? { id, distance } : best;
+  }, { id: m.activeIds[0], distance: Infinity }).id;
+}
+
+function updateEndpoints() {
+  state.startCell = nearestActivePoint(els.start.value);
+  state.exitCell = nearestActivePoint(els.exit.value);
+  if (state.startCell === state.exitCell) {
+    state.exitCell = state.maze.activeIds.reduce((best, id) => {
+      const distance = (state.maze.x(id) - state.maze.x(state.startCell)) ** 2 + (state.maze.y(id) - state.maze.y(state.startCell)) ** 2;
+      return distance > best.distance ? { id, distance } : best;
+    }, { id: state.exitCell, distance: -1 }).id;
+  }
+}
+
+function generate() {
+  try {
+    const width = clamp(Math.round(els.width.value), 2, 300), height = clamp(Math.round(els.height.value), 2, 300);
+    els.width.value = width; els.height.value = height;
+    if (els.start.value === els.exit.value) throw new Error("Start and exit must be different corners.");
+    if (!els.seed.value.trim()) els.seed.value = randomSeed();
+    const seed = hashSeed(els.seed.value);
+    const mask = buildShapeMask(
+      width, height, els.shape.value, rotationRadians(),
+      clamp(Math.round(els.polygonSides.value), 3, 24),
+      clamp(Math.round(els.starPoints.value), 3, 24), clamp(els.starInner.value, .15, .8)
+    );
+    const maze = new Maze(width, height, seed, mask);
+    if (maze.activeCount < 2) throw new Error("That shape is too small at these dimensions. Increase the maze size.");
+    const complexity = clamp(els.complexity.value, 0, 1);
+    const generators = {
+      binary: () => maze.binaryTree(), sidewinder: () => maze.sidewinder(), backtracker: () => maze.backtracker(),
+      growing: () => maze.growingTree(.15 + .85 * complexity), prim: () => maze.prim(), kruskal: () => maze.kruskal(),
+      wilson: () => maze.wilson(), aldous: () => maze.aldousBroder(), minotaur: () => maze.minotaurSpiral(),
+      fractal: () => maze.fractalSpiral(clamp(Math.round(els.spiralLayers.value), 1, 8)),
+      loxodrome: () => maze.loxodrome(clamp(els.rhumbBearing.value, 0, 90) * Math.PI / 180)
+    };
+    generators[els.algorithm.value](); maze.connectComponents(); maze.braid(clamp(els.braid.value, 0, 1));
+    state.maze = maze; updateEndpoints(); resetPlayer(false); updateSolution(); scheduleRender(); updateStatus();
+    els.stage.focus();
+  } catch (error) { toast(error.message, true); }
+}
+
+function randomSeed() {
+  const values = new Uint32Array(1); crypto.getRandomValues(values); return String(values[0] & 0x7fffffff);
+}
+function randomizeAndGenerate() { els.seed.value = randomSeed(); generate(); }
+
+function updateSolution() {
+  if (!state.maze) return;
+  state.solution = state.maze.solve(state.startCell, state.exitCell);
+}
+
+function resetPlayer(redraw = true) {
+  if (!state.maze) return;
+  stopSliding();
+  state.player = state.startCell; state.trail = [state.player]; state.moves = 0; state.complete = false;
+  els.completion.hidden = true;
+  if (redraw) { scheduleRender(); updateStatus(); els.stage.focus(); }
+}
+
+function moveOne(dir, announceWall = true) {
+  if (!els.playerMode.checked || !state.maze || state.complete) return;
+  if (!(state.maze.grid[state.player] & dir)) {
+    if (announceWall) toast("Wall! Try another direction.");
+    return false;
+  }
+  state.player = state.maze.neighbor(state.player, dir); state.trail.push(state.player); state.moves++;
+  if (state.player === state.exitCell) {
+    state.complete = true; els.completionText.textContent = `You reached the exit in ${state.moves} moves.`; els.completion.hidden = false;
+  }
+  scheduleRender(); updateStatus();
+  return true;
+}
+
+function stopSliding() {
+  if (state.slideTimer) clearTimeout(state.slideTimer);
+  state.slideTimer = 0; state.sliding = false;
+}
+
+function move(dir) {
+  if (!els.sliderMode.checked) { moveOne(dir); return; }
+  if (state.sliding || !els.playerMode.checked || !state.maze || state.complete) return;
+  if (!(state.maze.grid[state.player] & dir)) { toast("Wall! Try another direction."); return; }
+  state.sliding = true;
+  const glide = () => {
+    state.slideTimer = 0;
+    if (!moveOne(dir, false) || state.complete || !(state.maze.grid[state.player] & dir)) {
+      state.sliding = false;
+      return;
+    }
+    state.slideTimer = setTimeout(glide, 46);
+  };
+  glide();
+}
+
+function keyHandler(event) {
+  if (els.animationDialog.open) return;
+  if (event.key === "Enter") { event.preventDefault(); generate(); return; }
+  if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement?.tagName)) return;
+  if (["f", "F"].includes(event.key)) { event.preventDefault(); fitCamera(); return; }
+  if (["l", "L"].includes(event.key)) { event.preventDefault(); els.cameraMode.value = "lock"; applyCamera(); scheduleRender(); return; }
+  if (event.key === "0") { event.preventDefault(); setCameraZoom(1); return; }
+  if (["+", "="].includes(event.key)) { event.preventDefault(); setCameraZoom(state.camera.zoom + .25); return; }
+  if (["-", "_"].includes(event.key)) { event.preventDefault(); setCameraZoom(state.camera.zoom - .25); return; }
+  const dir = { ArrowUp: N, w: N, W: N, ArrowRight: E, d: E, D: E, ArrowDown: S, s: S, S, ArrowLeft: W, a: W, A: W }[event.key];
+  if (dir) { event.preventDefault(); move(dir); }
+}
+
+function hsvToHex(h, s = .92, v = 1) {
+  h = ((h % 1) + 1) % 1;
+  const i = Math.floor(h * 6), f = h * 6 - i, p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+  const [r, g, b] = [[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]][i % 6];
+  return `#${[r,g,b].map(x => Math.round(x * 255).toString(16).padStart(2,"0")).join("")}`;
+}
+function isRainbow(mode) { return mode.includes("Rainbow"); }
+function isAnimated(mode) { return mode.startsWith("Animated"); }
+function anyAnimated() { return Object.values(state.palettes).some(({ mode }) => isAnimated(mode)); }
+function anyLayerAnimation() { return Object.values(state.animations).some(config => config.enabled); }
+function hasAnimatedVisuals() { return anyAnimated() || anyLayerAnimation() || (els.showSolution.checked && els.solutionGlow.checked && els.glowPulse.checked); }
+function hexToRgb(hex) {
+  const value = hex.replace("#", "");
+  return [0, 2, 4].map(index => parseInt(value.slice(index, index + 2), 16));
+}
+function mixColors(a, b, amount) {
+  const first = hexToRgb(a), second = hexToRgb(b), t = clamp(amount, 0, 1);
+  return `#${first.map((value, index) => Math.round(value + (second[index] - value) * t).toString(16).padStart(2, "0")).join("")}`;
+}
+function animatedColor(config, baseColor, position, phase) {
+  if (!config?.enabled) return baseColor;
+  const direction = config.reverse ? -1 : 1;
+  let time = ((phase * 4200 / Math.max(80, config.duration)) * direction + config.phase / 360) % 1;
+  time = (time + 1) % 1;
+  const duty = config.duty / 100, a = config.colorA, b = config.colorB;
+  if (config.pattern === "flash") return time < duty ? a : b;
+  if (config.pattern === "fade") return mixColors(a, b, (1 - Math.cos(time * Math.PI * 2)) / 2);
+  if (config.pattern === "pulse") return mixColors(a, b, Math.sin(time * Math.PI) ** 2);
+  if (config.pattern === "bands") return ((position * config.bands + time) % 1 + 1) % 1 < duty ? a : b;
+  if (config.pattern === "twinkle") {
+    const wave = Math.sin((time + position * config.bands) * Math.PI * 2) * .55 + Math.sin((time * 2.17 - position * config.bands * 1.73) * Math.PI * 2) * .28 + Math.sin((time * 4.03 + position * 11.9) * Math.PI * 2) * .17;
+    return mixColors(a, b, wave * .5 + .5);
+  }
+  if (config.pattern === "rainbow") return hsvToHex(position + time);
+  return baseColor;
+}
+function applyLayerAnimation(name, baseColor, position, phase) {
+  return animatedColor(state.animations[name], baseColor, position, phase);
+}
+function paletteIsSpatial(name) {
+  const config = state.animations[name];
+  return isRainbow(state.palettes[name]?.mode || "") || Boolean(config?.enabled && ["bands", "twinkle", "rainbow"].includes(config.pattern));
+}
+function paletteColor(name, position, phase) {
+  const { mode, custom } = state.palettes[name];
+  let base;
+  if (STATIC_COLORS[mode]) base = STATIC_COLORS[mode];
+  else if (mode === "Custom…") base = custom;
+  else {
+    const reverse = mode.includes("Reverse");
+    const motion = isAnimated(mode) ? phase : 0;
+    base = hsvToHex(motion + (reverse ? -position : position));
+  }
+  return applyLayerAnimation(name, base, position, phase);
+}
+
+function rainbowGradient(ctx, name, x0, y0, x1, y1, phase) {
+  const gradient = ctx.createLinearGradient(x0, y0, x1, y1);
+  for (let i = 0; i <= 12; i++) gradient.addColorStop(i / 12, paletteColor(name, i / 12, phase));
+  return gradient;
+}
+
+function drawPath(ctx, points, name, phase, width, cell, margin, overrideColor = null) {
+  if (points.length < 2) return;
+  ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.lineWidth = width;
+  const center = (id) => [margin + state.maze.x(id) * cell + cell / 2, margin + state.maze.y(id) * cell + cell / 2];
+  if (!overrideColor && paletteIsSpatial(name)) {
+    for (let i = 0; i < points.length - 1; i++) {
+      const a = center(points[i]), b = center(points[i + 1]); ctx.strokeStyle = paletteColor(name, i / Math.max(1, points.length - 2), phase);
+      ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.stroke();
+    }
+  } else {
+    ctx.strokeStyle = overrideColor || paletteColor(name, .5, phase); ctx.beginPath();
+    points.forEach((id, i) => { const p = center(id); i ? ctx.lineTo(...p) : ctx.moveTo(...p); }); ctx.stroke();
+  }
+}
+
+function clipToMazeShape(ctx, maze, cell, margin) {
+  ctx.beginPath();
+  for (const id of maze.activeIds) ctx.rect(margin + maze.x(id) * cell, margin + maze.y(id) * cell, cell + .25, cell + .25);
+  ctx.clip();
+}
+
+function drawWordStamps(ctx, maze, cell, margin, phase) {
+  if (!els.wordsEnabled.checked) return;
+  const text = els.stampText.value.trim(); if (!text) return;
+  const count = clamp(Math.round(els.stampCount.value), 1, 500);
+  const configuredCell = clamp(els.cellSize.value, 4, 100), scale = cell / configuredCell;
+  let minSize = clamp(els.stampMinSize.value, 4, 200), maxSize = clamp(els.stampMaxSize.value, 4, 300);
+  if (minSize > maxSize) [minSize, maxSize] = [maxSize, minSize];
+  const maxRotation = clamp(els.stampRotation.value, 0, 180) * Math.PI / 180;
+  const rng = new RNG(hashSeed(`${els.seed.value}|${text}|word-field`));
+  ctx.save(); clipToMazeShape(ctx, maze, cell, margin); ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.globalAlpha = clamp(els.stampOpacity.value, .02, 1);
+  for (let i = 0; i < count; i++) {
+    const id = rng.pick(maze.activeIds), size = (minSize + rng.next() * (maxSize - minSize)) * scale;
+    const x = margin + (maze.x(id) + .5 + (rng.next() - .5) * .8) * cell;
+    const y = margin + (maze.y(id) + .5 + (rng.next() - .5) * .8) * cell;
+    const angle = (rng.next() * 2 - 1) * maxRotation;
+    const mode = els.stampColorMode.value;
+    const base = mode === "single" ? els.stampColor.value : hsvToHex(mode === "random" ? rng.next() : i / Math.max(1, count));
+    ctx.fillStyle = applyLayerAnimation("Words", base, i / Math.max(1, count - 1), phase);
+    ctx.font = `800 ${Math.max(3, size)}px Inter, ui-sans-serif, system-ui, sans-serif`;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(angle); ctx.fillText(text, 0, 0); ctx.restore();
+  }
+  ctx.restore();
+}
+
+function renderTo(canvas, phase, options = {}) {
+  const maze = state.maze; if (!maze) return;
+  const cell = options.cell ?? clamp(els.cellSize.value, 4, 100);
+  const wall = options.wall ?? clamp(els.wallWidth.value, 1, 20);
+  const margin = Math.max(8, Math.round(cell * .67));
+  const width = Math.ceil(maze.width * cell + margin * 2 + wall), height = Math.ceil(maze.height * cell + margin * 2 + wall);
+  canvas.width = width; canvas.height = height;
+  const ctx = canvas.getContext("2d", { alpha: false });
+  const boardMode = state.palettes.Board.mode;
+  ctx.fillStyle = "#252832"; ctx.fillRect(0, 0, width, height);
+  ctx.save(); clipToMazeShape(ctx, maze, cell, margin);
+  ctx.fillStyle = paletteIsSpatial("Board") ? rainbowGradient(ctx, "Board", 0, 0, width, height, phase) : paletteColor("Board", 0, phase);
+  ctx.fillRect(0, 0, width, height); ctx.restore();
+  const x0 = margin, y0 = margin;
+  if (els.stampLayer.value === "under") drawWordStamps(ctx, maze, cell, margin, phase);
+  ctx.lineWidth = wall; ctx.lineCap = "butt";
+  const wallStroke = (position) => paletteColor("Walls", position, phase);
+  for (const id of maze.activeIds) {
+    const x = maze.x(id), y = maze.y(id), passages = maze.grid[id], left = x0 + x * cell, top = y0 + y * cell, right = left + cell, bottom = top + cell;
+    ctx.strokeStyle = wallStroke((x / Math.max(1, maze.width - 1) + y / Math.max(1, maze.height - 1)) / 2);
+    ctx.beginPath();
+    if (maze.neighbor(id, N) < 0) { ctx.moveTo(left, top); ctx.lineTo(right, top); }
+    if (maze.neighbor(id, W) < 0) { ctx.moveTo(left, top); ctx.lineTo(left, bottom); }
+    if (maze.neighbor(id, E) < 0 || !(passages & E)) { ctx.moveTo(right, top); ctx.lineTo(right, bottom); }
+    if (maze.neighbor(id, S) < 0 || !(passages & S)) { ctx.moveTo(left, bottom); ctx.lineTo(right, bottom); }
+    ctx.stroke();
+  }
+  if (els.showSolution.checked) {
+    const solutionWidth = Math.max(2, cell / 5);
+    if (els.solutionGlow.checked) {
+      const ratio = cell / clamp(els.cellSize.value, 4, 100), intensity = clamp(els.glowIntensity.value, .5, 4);
+      const pulse = els.glowPulse.checked ? .55 + .45 * (Math.sin(phase * Math.PI * 2) * .5 + .5) : 1;
+      const passes = Math.max(1, Math.ceil(intensity));
+      ctx.save(); ctx.shadowColor = applyLayerAnimation("Glow", els.glowColor.value, .5, phase); ctx.shadowBlur = clamp(els.glowBlur.value, 0, 50) * ratio;
+      ctx.globalAlpha = Math.min(1, .34 * intensity / passes * pulse);
+      for (let i = 0; i < passes; i++) drawPath(ctx, state.solution, "Solution", phase, solutionWidth * 1.05, cell, margin, applyLayerAnimation("Glow", els.glowColor.value, .5, phase));
+      ctx.restore();
+    }
+    drawPath(ctx, state.solution, "Solution", phase, solutionWidth, cell, margin);
+  }
+  if (els.playerMode.checked && els.showTrail.checked) drawPath(ctx, state.trail, "Trail", phase, Math.max(2, cell / 4), cell, margin);
+  if (els.stampLayer.value === "over") drawWordStamps(ctx, maze, cell, margin, phase);
+  const center = (id) => [x0 + maze.x(id) * cell + cell / 2, y0 + maze.y(id) * cell + cell / 2];
+  const markerRadius = Math.max(3, cell / 4);
+  for (const [name, id] of [["Start", state.startCell], ["Exit", state.exitCell]]) {
+    const [cx, cy] = center(id); ctx.fillStyle = paletteColor(name, .5, phase); ctx.strokeStyle = "#000"; ctx.lineWidth = Math.max(1, wall / 2);
+    ctx.beginPath(); ctx.arc(cx, cy, markerRadius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  }
+  if (els.playerMode.checked) {
+    const [cx, cy] = center(state.player), radius = Math.max(4, cell * .31), pos = (maze.x(state.player) + maze.y(state.player)) / Math.max(1, maze.width + maze.height - 2);
+    ctx.fillStyle = paletteColor("Player", pos, phase); ctx.strokeStyle = "#fff"; ctx.lineWidth = Math.max(1, wall);
+    ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.beginPath(); ctx.arc(cx - radius * .35, cy - radius * .35, Math.max(1.5, radius / 5), 0, Math.PI * 2); ctx.fill();
+  }
+  return { cell, margin, width, height };
+}
+
+function previewCellSize() {
+  if (!state.maze) return 16;
+  const rect = els.stage.getBoundingClientRect(), margin = 22;
+  return Math.max(2, Math.min(clamp(els.cellSize.value, 4, 100), (rect.width - margin * 2) / state.maze.width, (rect.height - margin * 2) / state.maze.height));
+}
+function renderPreview() {
+  state.renderPending = false; if (!state.maze) return;
+  const baseCell = previewCellSize(), boost = Math.min(3, Math.max(1, state.camera.zoom));
+  state.previewCell = baseCell * boost;
+  state.previewMetrics = renderTo(els.canvas, state.phase, {
+    cell: state.previewCell,
+    wall: Math.max(1, clamp(els.wallWidth.value, 1, 20) * baseCell / clamp(els.cellSize.value, 4, 100) * boost)
+  });
+  els.canvas.style.width = `${els.canvas.width / boost}px`;
+  els.canvas.style.height = `${els.canvas.height / boost}px`;
+  applyCamera(true);
+}
+function scheduleRender() { if (!state.renderPending) { state.renderPending = true; requestAnimationFrame(renderPreview); } }
+
+function syncZoomUI() {
+  els.cameraZoom.value = state.camera.zoom;
+  els.cameraZoomOut.textContent = `${Math.round(state.camera.zoom * 100)}%`;
+}
+
+function playerCameraTarget() {
+  const metrics = state.previewMetrics;
+  if (!metrics || !state.maze) return [0, 0];
+  const scaleX = els.canvas.clientWidth / metrics.width, scaleY = els.canvas.clientHeight / metrics.height;
+  const playerX = metrics.margin + (state.maze.x(state.player) + .5) * metrics.cell;
+  const playerY = metrics.margin + (state.maze.y(state.player) + .5) * metrics.cell;
+  return [-(playerX - metrics.width / 2) * scaleX * state.camera.zoom, -(playerY - metrics.height / 2) * scaleY * state.camera.zoom];
+}
+
+function applyCamera(force = false) {
+  const mode = els.cameraMode.value;
+  els.stage.classList.toggle("camera-free", mode === "free");
+  if (mode === "fit") { state.camera.zoom = 1; state.camera.panX = 0; state.camera.panY = 0; }
+  else if (mode === "lock") [state.camera.panX, state.camera.panY] = playerCameraTarget();
+  else if (mode === "smooth") {
+    [state.camera.targetX, state.camera.targetY] = playerCameraTarget();
+    if (force && !Number.isFinite(state.camera.panX)) { state.camera.panX = state.camera.targetX; state.camera.panY = state.camera.targetY; }
+  }
+  syncZoomUI();
+  els.canvas.style.transform = `translate(${state.camera.panX}px, ${state.camera.panY}px) scale(${state.camera.zoom})`;
+}
+
+function setCameraZoom(value, rerender = true) {
+  state.camera.zoom = clamp(value, .25, 6);
+  if (els.cameraMode.value === "fit" && Math.abs(state.camera.zoom - 1) > .001) els.cameraMode.value = "free";
+  syncZoomUI(); applyCamera(); if (rerender) scheduleRender();
+}
+
+function fitCamera() {
+  els.cameraMode.value = "fit"; state.camera.zoom = 1; state.camera.panX = 0; state.camera.panY = 0;
+  applyCamera(); scheduleRender();
+}
+
+function updateStatus() {
+  if (!state.maze) return;
+  const shortest = Math.max(0, state.solution.length - 1), player = els.playerMode.checked ? ` · ${state.moves} player moves${state.complete ? " · COMPLETE" : ""}` : "";
+  els.status.innerHTML = `<strong>${ALGORITHM_NAMES[els.algorithm.value]}</strong> · ${state.maze.width}×${state.maze.height} · ${state.maze.activeCount} shaped cells · seed ${escapeHtml(els.seed.value)} · shortest ${shortest}${player}`;
+}
+function escapeHtml(value) { const div = document.createElement("div"); div.textContent = value; return div.innerHTML; }
+
+function validateExportSize(cell) {
+  const m = state.maze, margin = Math.max(8, Math.round(cell * .67)), w = Math.ceil(m.width * cell + margin * 2 + clamp(els.wallWidth.value, 1, 20)), h = Math.ceil(m.height * cell + margin * 2 + clamp(els.wallWidth.value, 1, 20));
+  if (w > 16384 || h > 16384 || w * h > 70000000) throw new Error(`Export would be ${w.toLocaleString()}×${h.toLocaleString()} px. Lower the cell size or maze dimensions.`);
+  return [w, h];
+}
+
+function filename(ext) {
+  const slug = els.algorithm.options[els.algorithm.selectedIndex].text.split(" (")[0].toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  return `maze_${els.shape.value}_${slug}_${state.maze.width}x${state.maze.height}_seed_${String(els.seed.value).replace(/[^a-z0-9_-]+/gi,"_")}.${ext}`;
+}
+function downloadBlob(blob, name) { const url = URL.createObjectURL(blob), link = document.createElement("a"); link.href = url; link.download = name; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1500); }
+function canvasBlob(canvas, type, quality) { return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("The browser could not encode this image.")), type, quality)); }
+
+function bmpBlob(canvas) {
+  const ctx = canvas.getContext("2d"), { width, height } = canvas, rgba = ctx.getImageData(0, 0, width, height).data;
+  const row = Math.ceil(width * 3 / 4) * 4, pixelBytes = row * height, buffer = new ArrayBuffer(54 + pixelBytes), view = new DataView(buffer), bytes = new Uint8Array(buffer);
+  const write = (offset, value, size) => size === 2 ? view.setUint16(offset, value, true) : view.setUint32(offset, value, true);
+  bytes[0] = 0x42; bytes[1] = 0x4d; write(2, buffer.byteLength, 4); write(10, 54, 4); write(14, 40, 4); write(18, width, 4); write(22, height, 4); write(26, 1, 2); write(28, 24, 2); write(34, pixelBytes, 4);
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    const source = ((height - 1 - y) * width + x) * 4, target = 54 + y * row + x * 3;
+    bytes[target] = rgba[source + 2]; bytes[target + 1] = rgba[source + 1]; bytes[target + 2] = rgba[source];
+  }
+  return new Blob([buffer], { type: "image/bmp" });
+}
+
+async function exportImage() {
+  if (!state.maze || state.exporting) return;
+  const format = els.format.value, cell = clamp(els.cellSize.value, 4, 100);
+  try {
+    validateExportSize(cell); state.exporting = true; state.cancelExport = false; els.download.disabled = true; els.download.textContent = "Rendering…";
+    const canvas = document.createElement("canvas");
+    if (format === "gif") {
+      const animated = hasAnimatedVisuals(), frameCount = animated ? clamp(Math.round(els.gifFrames.value), 8, 180) : 1, delay = clamp(Math.round(els.gifSpeed.value), 20, 500);
+      const encoder = GIFEncoder();
+      if (frameCount > 1) els.cancelEncoding.classList.remove("is-hidden");
+      for (let i = 0; i < frameCount; i++) {
+        if (state.cancelExport) throw new Error("__CANCELLED__");
+        els.download.textContent = `Encoding GIF ${i + 1}/${frameCount}`; await new Promise(requestAnimationFrame);
+        if (state.cancelExport) throw new Error("__CANCELLED__");
+        renderTo(canvas, animated ? i * delay / 4200 : state.phase, { cell });
+        const rgba = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+        const palette = quantize(rgba, 256), index = applyPalette(rgba, palette);
+        encoder.writeFrame(index, canvas.width, canvas.height, { palette, delay, repeat: 0 });
+      }
+      encoder.finish(); downloadBlob(new Blob([encoder.bytes()], { type: "image/gif" }), filename("gif"));
+    } else {
+      renderTo(canvas, state.phase, { cell });
+      const blob = format === "bmp" ? bmpBlob(canvas) : await canvasBlob(canvas, format === "jpeg" ? "image/jpeg" : "image/png", .95);
+      downloadBlob(blob, filename(format === "jpeg" ? "jpg" : format));
+    }
+    toast(`${format.toUpperCase()} downloaded.`);
+  } catch (error) {
+    if (error.message === "__CANCELLED__") toast("GIF encoding cancelled.");
+    else toast(error.message, true);
+  }
+  finally {
+    state.exporting = false; state.cancelExport = false; els.download.disabled = false;
+    els.cancelEncoding.disabled = false; els.cancelEncoding.textContent = "Cancel encoding";
+    els.cancelEncoding.classList.add("is-hidden"); updateFormatUI();
+  }
+}
+
+let toastTimer;
+function toast(message, danger = false) {
+  clearTimeout(toastTimer); els.toast.textContent = message; els.toast.style.borderColor = danger ? "#a84b5c" : ""; els.toast.classList.add("show");
+  toastTimer = setTimeout(() => els.toast.classList.remove("show"), 2200);
+}
+
+function updateFormatUI() {
+  const fmt = els.format.value; els.gifOptions.classList.toggle("is-hidden", fmt !== "gif");
+  els.download.textContent = `Download ${fmt === "jpeg" ? "JPEG" : fmt.toUpperCase()}`;
+}
+
+function updateShapeUI() {
+  els.polygonOptions.classList.toggle("is-hidden", els.shape.value !== "polygon");
+  els.starOptions.classList.toggle("is-hidden", els.shape.value !== "star");
+}
+
+function setupTabs() {
+  const buttons = document.querySelectorAll("[data-tab-button]"), panels = document.querySelectorAll("[data-tab]");
+  buttons.forEach(button => button.addEventListener("click", () => {
+    buttons.forEach(item => item.classList.toggle("active", item === button));
+    panels.forEach(panel => panel.classList.toggle("active", panel.dataset.tab === button.dataset.tabButton));
+  }));
+}
+
+function animationFormConfig() {
+  return {
+    enabled: els.animationEnabled.checked,
+    pattern: els.animationPattern.value,
+    colorA: els.animationColorA.value,
+    colorB: els.animationColorB.value,
+    duration: clamp(Math.round(els.animationDuration.value), 80, 10000),
+    duty: clamp(Math.round(els.animationDuty.value), 5, 95),
+    bands: clamp(Math.round(els.animationBands.value), 1, 24),
+    phase: clamp(Math.round(els.animationPhase.value), 0, 359),
+    reverse: els.animationReverse.checked
+  };
+}
+
+function updateAnimationFormLabels() {
+  els.animationDurationOut.textContent = `${Math.round(els.animationDuration.value)} ms`;
+  els.animationDutyOut.textContent = `${Math.round(els.animationDuty.value)}%`;
+  els.animationBandsOut.textContent = `${Math.round(els.animationBands.value)}`;
+  els.animationPhaseOut.textContent = `${Math.round(els.animationPhase.value)}°`;
+}
+
+function refreshAnimationButtons() {
+  document.querySelectorAll("[data-animate-target]").forEach(button => {
+    const active = state.animations[button.dataset.animateTarget]?.enabled;
+    button.classList.toggle("active", active); button.textContent = active ? "Anim ✓" : "Anim";
+  });
+  els.wordAnimation.classList.toggle("active", state.animations.Words.enabled);
+  els.glowAnimation.classList.toggle("active", state.animations.Glow.enabled);
+}
+
+function openAnimationDialog(name) {
+  const config = state.animations[name]; state.editingAnimation = name;
+  els.animationTitle.textContent = `Animate ${name}`;
+  els.animationEnabled.checked = true; els.animationPattern.value = config.pattern;
+  els.animationColorA.value = config.colorA; els.animationColorB.value = config.colorB;
+  els.animationDuration.value = config.duration; els.animationDuty.value = config.duty; els.animationBands.value = config.bands;
+  els.animationPhase.value = config.phase; els.animationReverse.checked = config.reverse;
+  updateAnimationFormLabels(); els.animationDialog.showModal();
+}
+
+function updateAnimationPreview(time) {
+  if (!els.animationDialog.open) return;
+  const config = animationFormConfig(); config.enabled = true;
+  const phase = (time / 4200) % 1, colors = [];
+  for (let i = 0; i <= 16; i++) colors.push(`${animatedColor(config, config.colorA, i / 16, phase)} ${i / 16 * 100}%`);
+  els.animationPreviewLine.style.background = ["bands", "twinkle", "rainbow"].includes(config.pattern)
+    ? `linear-gradient(90deg, ${colors.join(",")})`
+    : animatedColor(config, config.colorA, .5, phase);
+  els.animationPreviewLine.style.color = animatedColor(config, config.colorA, .5, phase);
+}
+
+function bindEvents() {
+  $("generateTop").addEventListener("click", generate); $("randomSeed").addEventListener("click", randomizeAndGenerate); $("seedDice").addEventListener("click", randomizeAndGenerate);
+  $("resetPlayer").addEventListener("click", () => resetPlayer()); $("playAgain").addEventListener("click", () => resetPlayer());
+  els.playerMode.addEventListener("change", () => { resetPlayer(false); scheduleRender(); updateStatus(); els.stage.focus(); });
+  els.showTrail.addEventListener("change", scheduleRender); els.showSolution.addEventListener("change", () => { els.solutionQuick.setAttribute("aria-pressed", String(els.showSolution.checked)); els.solutionQuick.textContent = els.showSolution.checked ? "Hide solution" : "Show solution"; scheduleRender(); });
+  els.solutionQuick.addEventListener("click", () => { els.showSolution.checked = !els.showSolution.checked; els.showSolution.dispatchEvent(new Event("change")); });
+  for (const select of [els.start, els.exit]) select.addEventListener("change", () => {
+    if (els.start.value === els.exit.value) { toast("Start and exit must be different corners.", true); return; }
+    updateEndpoints(); updateSolution(); resetPlayer(false); scheduleRender(); updateStatus();
+  });
+  for (const input of [els.cellSize, els.wallWidth]) input.addEventListener("input", scheduleRender);
+  for (const [input, output] of [[els.complexity, els.complexityOut], [els.braid, els.braidOut]]) input.addEventListener("input", () => output.textContent = `${Math.round(input.value * 100)}%`);
+  els.shape.addEventListener("change", () => {
+    updateShapeUI();
+    if (els.shape.value === "minotaur") { els.algorithm.value = "minotaur"; els.exit.value = "Center"; els.start.value = "Bottom Left"; }
+  });
+  let priorAngleUnit = els.angleUnit.value;
+  els.angleUnit.addEventListener("change", () => {
+    const value = Number(els.rotation.value) || 0;
+    els.rotation.value = priorAngleUnit === "deg" ? (value * Math.PI / 180).toFixed(4) : (value * 180 / Math.PI).toFixed(2);
+    priorAngleUnit = els.angleUnit.value;
+  });
+  els.starInner.addEventListener("input", () => els.starInnerOut.textContent = `${Math.round(els.starInner.value * 100)}%`);
+  els.rhumbBearing.addEventListener("input", () => els.rhumbBearingOut.textContent = `${Math.round(els.rhumbBearing.value)}°`);
+  for (const [input, output, format] of [
+    [els.glowBlur, els.glowBlurOut, value => `${Math.round(value)} px`],
+    [els.glowIntensity, els.glowIntensityOut, value => `${Number(value).toFixed(1)}×`],
+    [els.stampOpacity, els.stampOpacityOut, value => `${Math.round(value * 100)}%`],
+    [els.stampRotation, els.stampRotationOut, value => `${Math.round(value)}°`]
+  ]) input.addEventListener("input", () => { output.textContent = format(input.value); scheduleRender(); });
+  for (const input of [els.solutionGlow, els.glowColor, els.glowPulse, els.wordsEnabled, els.stampText, els.stampCount, els.stampLayer, els.stampMinSize, els.stampMaxSize, els.stampColorMode, els.stampColor]) {
+    input.addEventListener(input.tagName === "INPUT" && input.type === "text" ? "input" : "change", scheduleRender);
+  }
+  els.format.addEventListener("change", updateFormatUI); els.download.addEventListener("click", exportImage);
+  els.cancelEncoding.addEventListener("click", () => { state.cancelExport = true; els.cancelEncoding.disabled = true; els.cancelEncoding.textContent = "Cancelling…"; });
+  els.wordAnimation.addEventListener("click", () => openAnimationDialog("Words"));
+  els.glowAnimation.addEventListener("click", () => openAnimationDialog("Glow"));
+  for (const input of [els.animationDuration, els.animationDuty, els.animationBands, els.animationPhase]) input.addEventListener("input", updateAnimationFormLabels);
+  els.animationSave.addEventListener("click", () => {
+    if (!state.editingAnimation) return;
+    state.animations[state.editingAnimation] = animationFormConfig();
+    refreshAnimationButtons(); els.animationDialog.close(); scheduleRender();
+  });
+  els.animationRemove.addEventListener("click", () => {
+    if (!state.editingAnimation) return;
+    state.animations[state.editingAnimation].enabled = false;
+    refreshAnimationButtons(); els.animationDialog.close(); scheduleRender();
+  });
+  els.animationDialog.addEventListener("close", () => { state.editingAnimation = null; });
+  els.cameraMode.addEventListener("change", () => {
+    if (["lock", "smooth"].includes(els.cameraMode.value) && !els.playerMode.checked) {
+      els.playerMode.checked = true; resetPlayer(false); updateStatus();
+    }
+    if (els.cameraMode.value === "fit") fitCamera(); else { applyCamera(); scheduleRender(); }
+  });
+  els.cameraZoom.addEventListener("input", () => setCameraZoom(els.cameraZoom.value));
+  els.zoomOut.addEventListener("click", () => setCameraZoom(state.camera.zoom - .25));
+  els.zoomIn.addEventListener("click", () => setCameraZoom(state.camera.zoom + .25));
+  els.zoom100.addEventListener("click", () => setCameraZoom(1));
+  els.cameraFit.addEventListener("click", fitCamera);
+  els.stage.addEventListener("wheel", event => {
+    event.preventDefault();
+    const oldZoom = state.camera.zoom, nextZoom = clamp(oldZoom * Math.exp(-event.deltaY * .0015), .25, 6);
+    if (els.cameraMode.value === "fit") els.cameraMode.value = "free";
+    if (els.cameraMode.value === "free") {
+      const rect = els.stage.getBoundingClientRect(), cursorX = event.clientX - rect.left - rect.width / 2, cursorY = event.clientY - rect.top - rect.height / 2;
+      const ratio = nextZoom / oldZoom;
+      state.camera.panX = cursorX - (cursorX - state.camera.panX) * ratio;
+      state.camera.panY = cursorY - (cursorY - state.camera.panY) * ratio;
+    }
+    setCameraZoom(nextZoom);
+  }, { passive: false });
+  els.stage.addEventListener("pointerdown", event => {
+    if (els.cameraMode.value !== "free" || ![els.stage, els.canvas].includes(event.target)) return;
+    state.camera.dragging = true; state.camera.dragX = event.clientX; state.camera.dragY = event.clientY;
+    state.camera.originX = state.camera.panX; state.camera.originY = state.camera.panY;
+    els.stage.classList.add("dragging"); els.stage.setPointerCapture(event.pointerId);
+  });
+  els.stage.addEventListener("pointermove", event => {
+    if (!state.camera.dragging) return;
+    state.camera.panX = state.camera.originX + event.clientX - state.camera.dragX;
+    state.camera.panY = state.camera.originY + event.clientY - state.camera.dragY; applyCamera();
+  });
+  const stopDrag = event => {
+    if (!state.camera.dragging) return;
+    state.camera.dragging = false; els.stage.classList.remove("dragging");
+    if (event.pointerId !== undefined && els.stage.hasPointerCapture(event.pointerId)) els.stage.releasePointerCapture(event.pointerId);
+  };
+  els.stage.addEventListener("pointerup", stopDrag); els.stage.addEventListener("pointercancel", stopDrag);
+  window.addEventListener("keydown", keyHandler); window.addEventListener("resize", scheduleRender);
+  new ResizeObserver(scheduleRender).observe(els.stage);
+  document.querySelectorAll(".dpad button").forEach(button => button.addEventListener("click", () => { move({ N, E, S, W }[button.dataset.dir]); els.stage.focus(); }));
+}
+
+let lastAnimatedRender = 0;
+function animationLoop(time) {
+  updateAnimationPreview(time);
+  if (els.cameraMode.value === "smooth" && state.previewMetrics) {
+    [state.camera.targetX, state.camera.targetY] = playerCameraTarget();
+    state.camera.panX += (state.camera.targetX - state.camera.panX) * .13;
+    state.camera.panY += (state.camera.targetY - state.camera.panY) * .13;
+    if (Math.abs(state.camera.targetX - state.camera.panX) > .05 || Math.abs(state.camera.targetY - state.camera.panY) > .05) applyCamera();
+  }
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (hasAnimatedVisuals() && !reduced && time - lastAnimatedRender >= 48) {
+    lastAnimatedRender = time; state.phase = (time / 4200) % 1; scheduleRender();
+  }
+  requestAnimationFrame(animationLoop);
+}
+
+setupControls(); setupTabs(); bindEvents(); refreshAnimationButtons(); updateShapeUI(); updateFormatUI(); generate(); requestAnimationFrame(animationLoop);
+
+</script>
+</body>
+</html>
