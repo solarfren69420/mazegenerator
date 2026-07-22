@@ -1,0 +1,929 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#11131a">
+  <meta name="description" content="Generate, solve, play, and export seeded mazes in your browser.">
+  <title>Maze Lab Deluxe</title>
+  <style>
+:root {
+  color-scheme: dark;
+  --bg: #0b0d12;
+  --panel: #131720;
+  --panel-2: #191e29;
+  --line: #2b3241;
+  --muted: #8e98aa;
+  --text: #f5f7fb;
+  --cyan: #5ee7ff;
+  --violet: #9d7bff;
+  --green: #52e3a4;
+  --shadow: 0 22px 60px rgba(0, 0, 0, .38);
+}
+
+* { box-sizing: border-box; }
+
+html, body { min-height: 100%; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 80% -10%, rgba(104, 71, 220, .19), transparent 36rem),
+    radial-gradient(circle at 12% 20%, rgba(49, 179, 214, .09), transparent 30rem),
+    var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow: hidden;
+}
+
+button, input, select { font: inherit; }
+button { color: inherit; }
+
+.topbar {
+  height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 11px 22px 11px 24px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  background: rgba(11, 13, 18, .84);
+  backdrop-filter: blur(18px);
+}
+
+.eyebrow {
+  margin: 0 0 1px;
+  color: var(--muted);
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .18em;
+}
+
+h1 { margin: 0; font-size: 1.55rem; line-height: 1.1; letter-spacing: -.04em; }
+h1 span { color: var(--cyan); }
+.header-actions { display: flex; gap: 9px; }
+
+.button, .chip, .icon-button, .dpad button, .completion button {
+  border: 0;
+  cursor: pointer;
+  transition: transform .14s ease, border-color .14s ease, background .14s ease, opacity .14s ease;
+}
+.button:hover, .chip:hover, .icon-button:hover, .dpad button:hover { transform: translateY(-1px); }
+.button:active, .chip:active, .icon-button:active, .dpad button:active { transform: translateY(0); }
+.button:disabled { cursor: wait; opacity: .55; }
+
+.button {
+  padding: 10px 15px;
+  border-radius: 10px;
+  font-weight: 750;
+}
+.button.primary { background: linear-gradient(135deg, #684cff, #31c7e7); box-shadow: 0 9px 28px rgba(80, 90, 255, .25); }
+.button.ghost { background: #191d26; border: 1px solid #343b4b; }
+.button.secondary { background: #242a37; border: 1px solid #363e4e; }
+.button.export { color: #06130e; background: linear-gradient(135deg, #57e4a6, #73d8ef); }
+.full-button { width: 100%; }
+
+.app-shell {
+  height: calc(100vh - 78px);
+  display: grid;
+  grid-template-columns: 354px minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px;
+}
+
+.controls {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #454e61 transparent;
+  padding-right: 3px;
+}
+
+details {
+  margin-bottom: 9px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: rgba(19, 23, 32, .92);
+  box-shadow: 0 8px 28px rgba(0,0,0,.13);
+  overflow: clip;
+}
+
+summary {
+  padding: 13px 15px;
+  font-size: .82rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; float: right; color: var(--muted); font-size: 1rem; }
+details[open] summary::after { content: "−"; }
+details[open] summary { border-bottom: 1px solid var(--line); }
+
+.section-body { display: grid; gap: 11px; padding: 13px; }
+.section-body.compact { gap: 9px; }
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.field { min-width: 0; display: grid; gap: 5px; }
+.field > span, .hint { color: var(--muted); font-size: .72rem; font-weight: 650; }
+.field.full { width: 100%; }
+
+input[type="text"], input[type="number"], select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #343c4d;
+  border-radius: 9px;
+  outline: none;
+  color: var(--text);
+  background: #0f1219;
+  padding: 8px 9px;
+}
+select { padding-right: 25px; }
+input:focus, select:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(94, 231, 255, .09); }
+
+.inline-control { display: grid; grid-template-columns: 1fr 38px; gap: 6px; }
+.icon-button { border: 1px solid #343c4d; border-radius: 9px; background: #242a37; font-size: 1.2rem; }
+.range-field > span { display: flex; justify-content: space-between; gap: 8px; }
+output { color: var(--cyan); }
+input[type="range"] { width: 100%; accent-color: #7864ff; }
+
+.palette-controls { display: grid; gap: 8px; }
+.palette-row { display: grid; grid-template-columns: 61px 1fr 35px; align-items: center; gap: 6px; }
+.palette-row > span { color: var(--muted); font-size: .72rem; font-weight: 650; }
+.palette-row select { min-height: 35px; padding-block: 5px; font-size: .78rem; }
+.palette-row input[type="color"] { width: 35px; height: 35px; padding: 2px; border: 1px solid #343c4d; border-radius: 9px; background: #0f1219; cursor: pointer; }
+
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #d8deea; font-size: .79rem; cursor: pointer; }
+.switch-row input { position: absolute; opacity: 0; pointer-events: none; }
+.switch-row i { position: relative; width: 38px; height: 22px; flex: 0 0 auto; border-radius: 999px; background: #353c4a; transition: .18s ease; }
+.switch-row i::after { content: ""; position: absolute; width: 16px; height: 16px; top: 3px; left: 3px; border-radius: 50%; background: #fff; transition: .18s ease; }
+.switch-row input:checked + i { background: linear-gradient(135deg, #745cff, #3bcce9); }
+.switch-row input:checked + i::after { transform: translateX(16px); }
+.is-hidden { display: none !important; }
+.hint { margin: -2px 0 0; line-height: 1.45; font-weight: 500; }
+
+.workspace {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  overflow: hidden;
+  background: rgba(17, 20, 28, .88);
+  box-shadow: var(--shadow);
+}
+
+.viewer-toolbar, .playbar {
+  min-height: 51px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 8px 13px;
+  border-bottom: 1px solid var(--line);
+  background: #151922;
+}
+.playbar { min-height: 49px; border-top: 1px solid var(--line); border-bottom: 0; color: var(--muted); font-size: .76rem; }
+.status { min-width: 0; color: #bec6d4; font-size: .76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status strong { color: var(--text); }
+.chip { flex: 0 0 auto; padding: 7px 11px; border: 1px solid #384154; border-radius: 999px; background: #242a37; font-size: .72rem; font-weight: 750; }
+.chip[aria-pressed="true"] { color: #090f13; border-color: transparent; background: var(--cyan); }
+
+.canvas-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  outline: none;
+  background-color: #242832;
+  background-image:
+    linear-gradient(45deg, #292e38 25%, transparent 25%),
+    linear-gradient(-45deg, #292e38 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #292e38 75%),
+    linear-gradient(-45deg, transparent 75%, #292e38 75%);
+  background-size: 22px 22px;
+  background-position: 0 0, 0 11px, 11px -11px, -11px 0;
+}
+.canvas-stage:focus-visible { box-shadow: inset 0 0 0 2px var(--cyan); }
+#mazeCanvas { display: block; max-width: calc(100% - 24px); max-height: calc(100% - 24px); box-shadow: 0 16px 48px rgba(0,0,0,.34); }
+
+.completion {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  min-width: min(310px, calc(100% - 30px));
+  display: grid;
+  gap: 7px;
+  padding: 22px;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 16px;
+  text-align: center;
+  background: rgba(14, 17, 24, .92);
+  box-shadow: 0 22px 70px #000;
+  backdrop-filter: blur(14px);
+}
+.completion[hidden] { display: none; }
+.completion strong { font-size: 1.3rem; color: var(--green); }
+.completion span { color: var(--muted); font-size: .82rem; }
+.completion button { margin-top: 7px; padding: 9px; border-radius: 9px; color: #06130e; background: var(--green); font-weight: 800; }
+
+.dpad { display: none; grid-template-columns: repeat(4, 37px); gap: 5px; }
+.dpad button { width: 37px; height: 34px; border: 1px solid #3b4455; border-radius: 8px; background: #252b38; font-weight: 900; }
+.toast { position: fixed; right: 20px; bottom: 20px; z-index: 10; max-width: min(390px, calc(100% - 40px)); padding: 11px 14px; border: 1px solid #3e485c; border-radius: 11px; color: #dfe6f1; background: #181d27; box-shadow: var(--shadow); font-size: .8rem; opacity: 0; transform: translateY(10px); pointer-events: none; transition: .2s ease; }
+.toast.show { opacity: 1; transform: none; }
+
+@media (max-width: 820px) {
+  body { overflow: auto; }
+  .topbar { height: 70px; padding-inline: 15px; }
+  .eyebrow { display: none; }
+  .header-actions .ghost { display: none; }
+  .app-shell { height: auto; min-height: calc(100vh - 70px); grid-template-columns: 1fr; padding: 9px; }
+  .controls { overflow: visible; padding: 0; order: 2; }
+  .workspace { height: min(72vh, 680px); min-height: 470px; order: 1; }
+  .dpad { display: grid; }
+  .playbar > span { display: none; }
+  .playbar { justify-content: center; }
+}
+
+@media (max-width: 430px) {
+  h1 { font-size: 1.3rem; }
+  .button { padding: 9px 11px; }
+  .app-shell { padding: 6px; }
+  .workspace { min-height: 420px; }
+  .status { font-size: .68rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">GENERATE · PLAY · EXPORT</p>
+      <h1>Maze Lab <span>Deluxe</span></h1>
+    </div>
+    <div class="header-actions">
+      <button id="randomSeed" class="button ghost" type="button">Surprise me</button>
+      <button id="generateTop" class="button primary" type="button">Generate maze</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <aside class="controls" aria-label="Maze controls">
+      <details open>
+        <summary>Maze generation</summary>
+        <div class="section-body">
+          <label class="field full">
+            <span>Algorithm and typical difficulty</span>
+            <select id="algorithm">
+              <option value="binary">Binary Tree (Very Easy)</option>
+              <option value="sidewinder">Sidewinder (Easy)</option>
+              <option value="backtracker" selected>Recursive Backtracker (Medium)</option>
+              <option value="growing">Growing Tree (Medium–Hard)</option>
+              <option value="prim">Randomized Prim (Hard)</option>
+              <option value="kruskal">Randomized Kruskal (Hard)</option>
+              <option value="wilson">Wilson (Very Hard)</option>
+              <option value="aldous">Aldous–Broder (Very Hard)</option>
+            </select>
+          </label>
+
+          <div class="field-grid">
+            <label class="field"><span>Width</span><input id="mazeWidth" type="number" min="2" max="300" value="25"></label>
+            <label class="field"><span>Height</span><input id="mazeHeight" type="number" min="2" max="300" value="25"></label>
+          </div>
+
+          <label class="field full">
+            <span>Seed</span>
+            <div class="inline-control">
+              <input id="seed" type="text" value="12345" maxlength="80" spellcheck="false">
+              <button id="seedDice" class="icon-button" type="button" title="Random seed" aria-label="Random seed">↻</button>
+            </div>
+          </label>
+
+          <label class="field full range-field">
+            <span><span>Complexity / corridor bias</span><output id="complexityOut">75%</output></span>
+            <input id="complexity" type="range" min="0" max="1" step="0.01" value="0.75">
+          </label>
+          <label class="field full range-field">
+            <span><span>Braiding / extra loops</span><output id="braidOut">0%</output></span>
+            <input id="braid" type="range" min="0" max="1" step="0.01" value="0">
+          </label>
+
+          <div class="field-grid">
+            <label class="field"><span>Start</span><select id="startCorner"></select></label>
+            <label class="field"><span>Exit</span><select id="exitCorner"></select></label>
+          </div>
+        </div>
+      </details>
+
+      <details open>
+        <summary>Rendering & colors</summary>
+        <div class="section-body">
+          <div class="field-grid">
+            <label class="field"><span>Export cell px</span><input id="cellSize" type="number" min="4" max="100" value="24"></label>
+            <label class="field"><span>Wall px</span><input id="wallWidth" type="number" min="1" max="20" value="3"></label>
+          </div>
+          <div id="paletteControls" class="palette-controls"></div>
+        </div>
+      </details>
+
+      <details open>
+        <summary>Player & overlays</summary>
+        <div class="section-body compact">
+          <label class="switch-row"><span>Player mode</span><input id="playerMode" type="checkbox"><i></i></label>
+          <label class="switch-row"><span>Movement trail</span><input id="showTrail" type="checkbox" checked><i></i></label>
+          <label class="switch-row"><span>Solution overlay</span><input id="showSolution" type="checkbox"><i></i></label>
+          <button id="resetPlayer" class="button secondary full-button" type="button">Reset player</button>
+        </div>
+      </details>
+
+      <details open>
+        <summary>Save / export</summary>
+        <div class="section-body">
+          <label class="field full"><span>File extension</span>
+            <select id="format">
+              <option value="png">PNG — lossless (.png)</option>
+              <option value="jpeg">JPEG — compressed (.jpg)</option>
+              <option value="bmp">BMP — uncompressed (.bmp)</option>
+              <option value="gif">GIF — still or animated (.gif)</option>
+            </select>
+          </label>
+          <div id="gifOptions" class="field-grid is-hidden">
+            <label class="field"><span>GIF frames</span><input id="gifFrames" type="number" min="8" max="180" value="36"></label>
+            <label class="field"><span>Frame ms</span><input id="gifSpeed" type="number" min="20" max="500" value="55"></label>
+          </div>
+          <button id="download" class="button export full-button" type="button">Download PNG</button>
+          <p class="hint">Animated palettes move in the preview. GIF preserves the animation; other formats save the visible frame.</p>
+        </div>
+      </details>
+    </aside>
+
+    <section class="workspace" aria-label="Maze viewer">
+      <div class="viewer-toolbar">
+        <div id="status" class="status" aria-live="polite">Generating maze…</div>
+        <button id="solutionQuick" class="chip" type="button" aria-pressed="false">Show solution</button>
+      </div>
+      <div id="canvasStage" class="canvas-stage" tabindex="0" aria-label="Maze. Enable player mode and use arrow keys or WASD to move.">
+        <canvas id="mazeCanvas"></canvas>
+        <div id="completion" class="completion" role="status" hidden>
+          <strong>Maze complete!</strong>
+          <span id="completionText"></span>
+          <button id="playAgain" type="button">Play again</button>
+        </div>
+      </div>
+      <div class="playbar">
+        <span>Click the maze, then use arrows or WASD.</span>
+        <div class="dpad" aria-label="Touch movement controls">
+          <button data-dir="N" aria-label="Move up">↑</button>
+          <button data-dir="W" aria-label="Move left">←</button>
+          <button data-dir="S" aria-label="Move down">↓</button>
+          <button data-dir="E" aria-label="Move right">→</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script>
+/* gifenc 1.0.3 — MIT License */
+const { GIFEncoder, quantize, applyPalette } = (() => {
+var X={signature:"GIF",version:"89a",trailer:59,extensionIntroducer:33,applicationExtensionLabel:255,graphicControlExtensionLabel:249,imageSeparator:44,signatureSize:3,versionSize:3,globalColorTableFlagMask:128,colorResolutionMask:112,sortFlagMask:8,globalColorTableSizeMask:7,applicationIdentifierSize:8,applicationAuthCodeSize:3,disposalMethodMask:28,userInputFlagMask:2,transparentColorFlagMask:1,localColorTableFlagMask:128,interlaceFlagMask:64,idSortFlagMask:32,localColorTableSizeMask:7};function F(t=256){let e=0,s=new Uint8Array(t);return{get buffer(){return s.buffer},reset(){e=0},bytesView(){return s.subarray(0,e)},bytes(){return s.slice(0,e)},writeByte(r){n(e+1),s[e]=r,e++},writeBytes(r,o=0,i=r.length){n(e+i);for(let c=0;c<i;c++)s[e++]=r[c+o]},writeBytesView(r,o=0,i=r.byteLength){n(e+i),s.set(r.subarray(o,o+i),e),e+=i}};function n(r){var o=s.length;if(o>=r)return;var i=1024*1024;r=Math.max(r,o*(o<i?2:1.125)>>>0),o!=0&&(r=Math.max(r,256));let c=s;s=new Uint8Array(r),e>0&&s.set(c.subarray(0,e),0)}}var O=12,J=5003,lt=[0,1,3,7,15,31,63,127,255,511,1023,2047,4095,8191,16383,32767,65535];function at(t,e,s,n,r=F(512),o=new Uint8Array(256),i=new Int32Array(J),c=new Int32Array(J)){let x=i.length,a=Math.max(2,n);o.fill(0),c.fill(0),i.fill(-1);let l=0,f=0,g=a+1,h=g,b=!1,w=h,_=(1<<w)-1,u=1<<g-1,k=u+1,B=u+2,p=0,A=s[0],z=0;for(let y=x;y<65536;y*=2)++z;z=8-z,r.writeByte(a),I(u);let d=s.length;for(let y=1;y<d;y++){t:{let m=s[y],v=(m<<O)+A,M=m<<z^A;if(i[M]===v){A=c[M];break t}let V=M===0?1:x-M;for(;i[M]>=0;)if(M-=V,M<0&&(M+=x),i[M]===v){A=c[M];break t}I(A),A=m,B<1<<O?(c[M]=B++,i[M]=v):(i.fill(-1),B=u+2,b=!0,I(u))}}return I(A),I(k),r.writeByte(0),r.bytesView();function I(y){for(l&=lt[f],f>0?l|=y<<f:l=y,f+=w;f>=8;)o[p++]=l&255,p>=254&&(r.writeByte(p),r.writeBytesView(o,0,p),p=0),l>>=8,f-=8;if((B>_||b)&&(b?(w=h,_=(1<<w)-1,b=!1):(++w,_=w===O?1<<w:(1<<w)-1)),y==k){for(;f>0;)o[p++]=l&255,p>=254&&(r.writeByte(p),r.writeBytesView(o,0,p),p=0),l>>=8,f-=8;p>0&&(r.writeByte(p),r.writeBytesView(o,0,p),p=0)}}}var $=at;function D(t,e,s){return t<<8&63488|e<<2&992|s>>3}function G(t,e,s,n){return t>>4|e&240|(s&240)<<4|(n&240)<<8}function j(t,e,s){return t>>4<<8|e&240|s>>4}function R(t,e,s){return t<e?e:t>s?s:t}function T(t){return t*t}function tt(t,e,s){var n=0,r=1e100;let o=t[e],i=o.cnt,c=o.ac,x=o.rc,a=o.gc,l=o.bc;for(var f=o.fw;f!=0;f=t[f].fw){let h=t[f],b=h.cnt,w=i*b/(i+b);if(!(w>=r)){var g=0;s&&(g+=w*T(h.ac-c),g>=r)||(g+=w*T(h.rc-x),!(g>=r)&&(g+=w*T(h.gc-a),!(g>=r)&&(g+=w*T(h.bc-l),!(g>=r)&&(r=g,n=f))))}}o.err=r,o.nn=n}function Q(){return{ac:0,rc:0,gc:0,bc:0,cnt:0,nn:0,fw:0,bk:0,tm:0,mtm:0,err:0}}function ut(t,e){let s=e==="rgb444"?4096:65536,n=new Array(s),r=t.length;if(e==="rgba4444")for(let o=0;o<r;++o){let i=t[o],c=i>>24&255,x=i>>16&255,a=i>>8&255,l=i&255,f=G(l,a,x,c),g=f in n?n[f]:n[f]=Q();g.rc+=l,g.gc+=a,g.bc+=x,g.ac+=c,g.cnt++}else if(e==="rgb444")for(let o=0;o<r;++o){let i=t[o],c=i>>16&255,x=i>>8&255,a=i&255,l=j(a,x,c),f=l in n?n[l]:n[l]=Q();f.rc+=a,f.gc+=x,f.bc+=c,f.cnt++}else for(let o=0;o<r;++o){let i=t[o],c=i>>16&255,x=i>>8&255,a=i&255,l=D(a,x,c),f=l in n?n[l]:n[l]=Q();f.rc+=a,f.gc+=x,f.bc+=c,f.cnt++}return n}function H(t,e,s={}){let{format:n="rgb565",clearAlpha:r=!0,clearAlphaColor:o=0,clearAlphaThreshold:i=0,oneBitAlpha:c=!1}=s;if(!t||!t.buffer)throw new Error("quantize() expected RGBA Uint8Array data");if(!(t instanceof Uint8Array)&&!(t instanceof Uint8ClampedArray))throw new Error("quantize() expected RGBA Uint8Array data");let x=new Uint32Array(t.buffer),a=s.useSqrt!==!1,l=n==="rgba4444",f=ut(x,n),g=f.length,h=g-1,b=new Uint32Array(g+1);for(var w=0,u=0;u<g;++u){let C=f[u];if(C!=null){var _=1/C.cnt;l&&(C.ac*=_),C.rc*=_,C.gc*=_,C.bc*=_,f[w++]=C}}T(e)/w<.022&&(a=!1);for(var u=0;u<w-1;++u)f[u].fw=u+1,f[u+1].bk=u,a&&(f[u].cnt=Math.sqrt(f[u].cnt));a&&(f[u].cnt=Math.sqrt(f[u].cnt));var k,B,p;for(u=0;u<w;++u){tt(f,u,!1);var A=f[u].err;for(B=++b[0];B>1&&(p=B>>1,!(f[k=b[p]].err<=A));B=p)b[B]=k;b[B]=u}var z=w-e;for(u=0;u<z;){for(var d;;){var I=b[1];if(d=f[I],d.tm>=d.mtm&&f[d.nn].mtm<=d.tm)break;d.mtm==h?I=b[1]=b[b[0]--]:(tt(f,I,!1),d.tm=u);var A=f[I].err;for(B=1;(p=B+B)<=b[0]&&(p<b[0]&&f[b[p]].err>f[b[p+1]].err&&p++,!(A<=f[k=b[p]].err));B=p)b[B]=k;b[B]=I}var y=f[d.nn],m=d.cnt,v=y.cnt,_=1/(m+v);l&&(d.ac=_*(m*d.ac+v*y.ac)),d.rc=_*(m*d.rc+v*y.rc),d.gc=_*(m*d.gc+v*y.gc),d.bc=_*(m*d.bc+v*y.bc),d.cnt+=y.cnt,d.mtm=++u,f[y.bk].fw=y.fw,f[y.fw].bk=y.bk,y.mtm=h}let M=[];var V=0;for(u=0;;++V){let L=R(Math.round(f[u].rc),0,255),C=R(Math.round(f[u].gc),0,255),Y=R(Math.round(f[u].bc),0,255),E=255;if(l){if(E=R(Math.round(f[u].ac),0,255),c){let st=typeof c=="number"?c:127;E=E<=st?0:255}r&&E<=i&&(L=C=Y=o,E=0)}let K=l?[L,C,Y,E]:[L,C,Y];if(xt(M,K)||M.push(K),(u=f[u].fw)==0)break}return M}function xt(t,e){for(let s=0;s<t.length;s++){let n=t[s],r=n[0]===e[0]&&n[1]===e[1]&&n[2]===e[2],o=n.length>=4&&e.length>=4?n[3]===e[3]:!0;if(r&&o)return!0}return!1}function U(t,e){var s=0,n;for(n=0;n<t.length;n++){let r=t[n]-e[n];s+=r*r}return s}function P(t,e){return e>1?Math.round(t/e)*e:t}function et(t,{roundRGB:e=5,roundAlpha:s=10,oneBitAlpha:n=null}={}){let r=new Uint32Array(t.buffer);for(let o=0;o<r.length;o++){let i=r[o],c=i>>24&255,x=i>>16&255,a=i>>8&255,l=i&255;if(c=P(c,s),n){let f=typeof n=="number"?n:127;c=c<=f?0:255}l=P(l,e),a=P(a,e),x=P(x,e),r[o]=c<<24|x<<16|a<<8|l<<0}}function nt(t,e,s="rgb565"){if(!t||!t.buffer)throw new Error("quantize() expected RGBA Uint8Array data");if(!(t instanceof Uint8Array)&&!(t instanceof Uint8ClampedArray))throw new Error("quantize() expected RGBA Uint8Array data");if(e.length>256)throw new Error("applyPalette() only works with 256 colors or less");let n=new Uint32Array(t.buffer),r=n.length,o=s==="rgb444"?4096:65536,i=new Uint8Array(r),c=new Array(o),x=s==="rgba4444";if(s==="rgba4444")for(let a=0;a<r;a++){let l=n[a],f=l>>24&255,g=l>>16&255,h=l>>8&255,b=l&255,w=G(b,h,g,f),_=w in c?c[w]:c[w]=gt(b,h,g,f,e);i[a]=_}else{let a=s==="rgb444"?j:D;for(let l=0;l<r;l++){let f=n[l],g=f>>16&255,h=f>>8&255,b=f&255,w=a(b,h,g),_=w in c?c[w]:c[w]=bt(b,h,g,e);i[l]=_}}return i}function gt(t,e,s,n,r){let o=0,i=1e100;for(let c=0;c<r.length;c++){let x=r[c],a=x[3],l=q(a-n);if(l>i)continue;let f=x[0];if(l+=q(f-t),l>i)continue;let g=x[1];if(l+=q(g-e),l>i)continue;let h=x[2];l+=q(h-s),!(l>i)&&(i=l,o=c)}return o}function bt(t,e,s,n){let r=0,o=1e100;for(let i=0;i<n.length;i++){let c=n[i],x=c[0],a=q(x-t);if(a>o)continue;let l=c[1];if(a+=q(l-e),a>o)continue;let f=c[2];a+=q(f-s),!(a>o)&&(o=a,r=i)}return r}function rt(t,e,s=5){if(!t.length||!e.length)return;let n=t.map(i=>i.slice(0,3)),r=s*s,o=t[0].length;for(let i=0;i<e.length;i++){let c=e[i];c.length<o?c=[c[0],c[1],c[2],255]:c.length>o?c=c.slice(0,3):c=c.slice();let x=N(n,c.slice(0,3),U),a=x[0],l=x[1];l>0&&l<=r&&(t[a]=c)}}function q(t){return t*t}function W(t,e,s=U){let n=Infinity,r=-1;for(let o=0;o<t.length;o++){let i=t[o],c=s(e,i);c<n&&(n=c,r=o)}return r}function N(t,e,s=U){let n=Infinity,r=-1;for(let o=0;o<t.length;o++){let i=t[o],c=s(e,i);c<n&&(n=c,r=o)}return[r,n]}function ot(t,e,s=U){return t[W(t,e,s)]}function ct(t={}){let{initialCapacity:e=4096,auto:s=!0}=t,n=F(e),r=5003,o=new Uint8Array(256),i=new Int32Array(r),c=new Int32Array(r),x=!1;return{reset(){n.reset(),x=!1},finish(){n.writeByte(X.trailer)},bytes(){return n.bytes()},bytesView(){return n.bytesView()},get buffer(){return n.buffer},get stream(){return n},writeHeader:a,writeFrame(l,f,g,h={}){let{transparent:b=!1,transparentIndex:w=0,delay:_=0,palette:u=null,repeat:k=0,colorDepth:B=8,dispose:p=-1}=h,A=!1;if(s?x||(A=!0,a(),x=!0):A=Boolean(h.first),f=Math.max(0,Math.floor(f)),g=Math.max(0,Math.floor(g)),A){if(!u)throw new Error("First frame must include a { palette } option");pt(n,f,g,u,B),it(n,u),k>=0&&dt(n,k)}let z=Math.round(_/10);wt(n,p,z,b,w);let d=Boolean(u)&&!A;ht(n,f,g,d?u:null),d&&it(n,u),yt(n,l,f,g,B,o,i,c)}};function a(){ft(n,"GIF89a")}}function wt(t,e,s,n,r){t.writeByte(33),t.writeByte(249),t.writeByte(4),r<0&&(r=0,n=!1);var o,i;n?(o=1,i=2):(o=0,i=0),e>=0&&(i=e&7),i<<=2;let c=0;t.writeByte(0|i|c|o),S(t,s),t.writeByte(r||0),t.writeByte(0)}function pt(t,e,s,n,r=8){let o=1,i=0,c=Z(n.length)-1,x=o<<7|r-1<<4|i<<3|c,a=0,l=0;S(t,e),S(t,s),t.writeBytes([x,a,l])}function dt(t,e){t.writeByte(33),t.writeByte(255),t.writeByte(11),ft(t,"NETSCAPE2.0"),t.writeByte(3),t.writeByte(1),S(t,e),t.writeByte(0)}function it(t,e){let s=1<<Z(e.length);for(let n=0;n<s;n++){let r=[0,0,0];n<e.length&&(r=e[n]),t.writeByte(r[0]),t.writeByte(r[1]),t.writeByte(r[2])}}function ht(t,e,s,n){if(t.writeByte(44),S(t,0),S(t,0),S(t,e),S(t,s),n){let r=0,o=0,i=Z(n.length)-1;t.writeByte(128|r|o|0|i)}else t.writeByte(0)}function yt(t,e,s,n,r=8,o,i,c){$(s,n,e,r,t,o,i,c)}function S(t,e){t.writeByte(e&255),t.writeByte(e>>8&255)}function ft(t,e){for(var s=0;s<e.length;s++)t.writeByte(e.charCodeAt(s))}function Z(t){return Math.max(Math.ceil(Math.log2(t)),1)}var Bt=ct;
+
+
+return { GIFEncoder: ct, quantize: H, applyPalette: nt };
+})();
+const N = 1, E = 2, S = 4, W = 8;
+const DIRS = [N, E, S, W];
+const DX = { [N]: 0, [E]: 1, [S]: 0, [W]: -1 };
+const DY = { [N]: -1, [E]: 0, [S]: 1, [W]: 0 };
+const OPP = { [N]: S, [E]: W, [S]: N, [W]: E };
+
+const CORNERS = ["Top Left", "Top Right", "Bottom Left", "Bottom Right"];
+const STATIC_COLORS = {
+  White: "#FFFFFF", Black: "#111116", Slate: "#303640", Graphite: "#1D2028",
+  Gray: "#808080", Silver: "#C8CCD2", Red: "#E53935", Crimson: "#B71C1C",
+  Orange: "#FB8C00", Amber: "#FFB300", Yellow: "#FDD835", Lime: "#7CB342",
+  Green: "#2EAD5B", Emerald: "#008F6B", Teal: "#00897B", Cyan: "#00ACC1",
+  "Sky Blue": "#42A5F5", Blue: "#246BCE", Indigo: "#3949AB", Purple: "#8E44AD",
+  Magenta: "#D81B60", Pink: "#EC407A", Brown: "#795548", Cream: "#FFF3D6"
+};
+const SPECIAL_COLORS = ["Rainbow", "Rainbow Reverse", "Animated Rainbow", "Animated Rainbow Reverse", "Custom…"];
+const PALETTES = ["Board", "Walls", "Trail", "Solution", "Player", "Start", "Exit"];
+const DEFAULT_PALETTES = {
+  Board: ["White", "#FFFFFF"], Walls: ["Black", "#111116"], Trail: ["Sky Blue", "#42A5F5"],
+  Solution: ["Purple", "#8E44AD"], Player: ["Red", "#E53935"], Start: ["Green", "#2EAD5B"], Exit: ["Orange", "#FB8C00"]
+};
+const ALGORITHM_NAMES = {
+  binary: "Binary Tree (Very Easy)", sidewinder: "Sidewinder (Easy)",
+  backtracker: "Recursive Backtracker (Medium)", growing: "Growing Tree (Medium–Hard)",
+  prim: "Randomized Prim (Hard)", kruskal: "Randomized Kruskal (Hard)",
+  wilson: "Wilson (Very Hard)", aldous: "Aldous–Broder (Very Hard)"
+};
+
+const $ = (id) => document.getElementById(id);
+const els = {
+  algorithm: $("algorithm"), width: $("mazeWidth"), height: $("mazeHeight"), seed: $("seed"),
+  complexity: $("complexity"), braid: $("braid"), complexityOut: $("complexityOut"), braidOut: $("braidOut"),
+  start: $("startCorner"), exit: $("exitCorner"), cellSize: $("cellSize"), wallWidth: $("wallWidth"),
+  playerMode: $("playerMode"), showTrail: $("showTrail"), showSolution: $("showSolution"),
+  format: $("format"), gifFrames: $("gifFrames"), gifSpeed: $("gifSpeed"), gifOptions: $("gifOptions"),
+  download: $("download"), canvas: $("mazeCanvas"), stage: $("canvasStage"), status: $("status"),
+  completion: $("completion"), completionText: $("completionText"), solutionQuick: $("solutionQuick"), toast: $("toast")
+};
+
+const state = {
+  maze: null,
+  player: 0,
+  trail: [],
+  moves: 0,
+  complete: false,
+  phase: 0,
+  palettes: {},
+  solution: [],
+  previewCell: 16,
+  renderPending: false,
+  exporting: false
+};
+
+function clamp(value, min, max) { return Math.min(max, Math.max(min, Number(value))); }
+
+function hashSeed(text) {
+  const value = String(text).trim();
+  if (/^-?\d+$/.test(value)) return Number(BigInt(value) & 0xffffffffn) >>> 0;
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+class RNG {
+  constructor(seed) { this.state = seed >>> 0; }
+  next() {
+    let t = this.state += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+  int(max) { return Math.floor(this.next() * max); }
+  pick(array) { return array[this.int(array.length)]; }
+  shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = this.int(i + 1);
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+}
+
+class Maze {
+  constructor(width, height, seed) {
+    this.width = width;
+    this.height = height;
+    this.size = width * height;
+    this.seed = seed;
+    this.grid = new Uint8Array(this.size);
+    this.rng = new RNG(seed);
+  }
+  id(x, y) { return y * this.width + x; }
+  x(id) { return id % this.width; }
+  y(id) { return Math.floor(id / this.width); }
+  neighbor(id, dir) {
+    const x = this.x(id) + DX[dir], y = this.y(id) + DY[dir];
+    return x >= 0 && y >= 0 && x < this.width && y < this.height ? this.id(x, y) : -1;
+  }
+  neighbors(id) {
+    const out = [];
+    for (const dir of DIRS) {
+      const next = this.neighbor(id, dir);
+      if (next >= 0) out.push([dir, next]);
+    }
+    return out;
+  }
+  connected(id) {
+    const out = [], passages = this.grid[id];
+    for (const dir of DIRS) if (passages & dir) out.push(this.neighbor(id, dir));
+    return out;
+  }
+  carve(a, b, dir = 0) {
+    if (!dir) {
+      const delta = b - a;
+      dir = delta === -this.width ? N : delta === 1 ? E : delta === this.width ? S : W;
+    }
+    this.grid[a] |= dir;
+    this.grid[b] |= OPP[dir];
+  }
+  binaryTree() {
+    for (let y = 0; y < this.height; y++) for (let x = 0; x < this.width; x++) {
+      const id = this.id(x, y), options = [];
+      if (y > 0) options.push([N, id - this.width]);
+      if (x < this.width - 1) options.push([E, id + 1]);
+      if (options.length) { const [dir, next] = this.rng.pick(options); this.carve(id, next, dir); }
+    }
+  }
+  sidewinder() {
+    for (let y = 0; y < this.height; y++) {
+      let run = [];
+      for (let x = 0; x < this.width; x++) {
+        const id = this.id(x, y); run.push(id);
+        const close = x === this.width - 1 || (y > 0 && this.rng.next() < .5);
+        if (close) {
+          if (y > 0) { const member = this.rng.pick(run); this.carve(member, member - this.width, N); }
+          run = [];
+        } else this.carve(id, id + 1, E);
+      }
+    }
+  }
+  backtracker() {
+    const start = this.rng.int(this.size), visited = new Uint8Array(this.size), stack = [start];
+    visited[start] = 1;
+    while (stack.length) {
+      const current = stack[stack.length - 1];
+      const candidates = this.neighbors(current).filter(([, n]) => !visited[n]);
+      if (!candidates.length) { stack.pop(); continue; }
+      const [dir, next] = this.rng.pick(candidates);
+      this.carve(current, next, dir); visited[next] = 1; stack.push(next);
+    }
+  }
+  growingTree(newestBias) {
+    const start = this.rng.int(this.size), visited = new Uint8Array(this.size), active = [start];
+    visited[start] = 1;
+    while (active.length) {
+      const index = this.rng.next() < newestBias ? active.length - 1 : this.rng.int(active.length);
+      const current = active[index], candidates = this.neighbors(current).filter(([, n]) => !visited[n]);
+      if (candidates.length) {
+        const [dir, next] = this.rng.pick(candidates);
+        this.carve(current, next, dir); visited[next] = 1; active.push(next);
+      } else active.splice(index, 1);
+    }
+  }
+  prim() {
+    const start = this.rng.int(this.size), visited = new Uint8Array(this.size), frontier = [];
+    const add = (id) => { for (const [dir, next] of this.neighbors(id)) if (!visited[next]) frontier.push([id, dir, next]); };
+    visited[start] = 1; add(start);
+    while (frontier.length) {
+      const index = this.rng.int(frontier.length), edge = frontier[index];
+      frontier[index] = frontier[frontier.length - 1]; frontier.pop();
+      const [from, dir, next] = edge;
+      if (visited[next]) continue;
+      this.carve(from, next, dir); visited[next] = 1; add(next);
+    }
+  }
+  kruskal() {
+    const parent = new Int32Array(this.size), rank = new Uint8Array(this.size), edges = [];
+    for (let i = 0; i < this.size; i++) parent[i] = i;
+    const find = (item) => { let root = item; while (parent[root] !== root) root = parent[root]; while (parent[item] !== item) { const p = parent[item]; parent[item] = root; item = p; } return root; };
+    const union = (a, b) => { let ra = find(a), rb = find(b); if (ra === rb) return false; if (rank[ra] < rank[rb]) [ra, rb] = [rb, ra]; parent[rb] = ra; if (rank[ra] === rank[rb]) rank[ra]++; return true; };
+    for (let y = 0; y < this.height; y++) for (let x = 0; x < this.width; x++) {
+      const id = this.id(x, y);
+      if (x + 1 < this.width) edges.push([id, E, id + 1]);
+      if (y + 1 < this.height) edges.push([id, S, id + this.width]);
+    }
+    this.rng.shuffle(edges);
+    for (const [a, dir, b] of edges) if (union(a, b)) this.carve(a, b, dir);
+  }
+  wilson() {
+    const unvisited = Array.from({ length: this.size }, (_, i) => i);
+    const positions = new Int32Array(this.size); for (let i = 0; i < this.size; i++) positions[i] = i;
+    const inTree = new Uint8Array(this.size);
+    const remove = (id) => {
+      const at = positions[id]; if (at < 0) return;
+      const last = unvisited.pop();
+      if (at < unvisited.length) { unvisited[at] = last; positions[last] = at; }
+      positions[id] = -1;
+    };
+    const first = this.rng.pick(unvisited); inTree[first] = 1; remove(first);
+    while (unvisited.length) {
+      const start = this.rng.pick(unvisited), path = [start], pathPos = new Map([[start, 0]]);
+      let current = start;
+      while (!inTree[current]) {
+        const [, next] = this.rng.pick(this.neighbors(current));
+        if (pathPos.has(next)) {
+          const keep = pathPos.get(next);
+          for (let i = path.length - 1; i > keep; i--) pathPos.delete(path[i]);
+          path.length = keep + 1;
+        } else { pathPos.set(next, path.length); path.push(next); }
+        current = next;
+      }
+      for (let i = 0; i < path.length - 1; i++) { this.carve(path[i], path[i + 1]); inTree[path[i]] = 1; remove(path[i]); }
+      inTree[path[path.length - 1]] = 1; remove(path[path.length - 1]);
+    }
+  }
+  aldousBroder() {
+    let current = this.rng.int(this.size), count = 1;
+    const visited = new Uint8Array(this.size); visited[current] = 1;
+    while (count < this.size) {
+      const [dir, next] = this.rng.pick(this.neighbors(current));
+      if (!visited[next]) { this.carve(current, next, dir); visited[next] = 1; count++; }
+      current = next;
+    }
+  }
+  braid(amount) {
+    if (amount <= 0) return;
+    const deadEnds = [];
+    for (let id = 0; id < this.size; id++) if (this.connected(id).length === 1) deadEnds.push(id);
+    this.rng.shuffle(deadEnds);
+    for (const id of deadEnds) {
+      if (this.rng.next() > amount) continue;
+      const closed = this.neighbors(id).filter(([dir]) => !(this.grid[id] & dir));
+      if (!closed.length) continue;
+      const preferred = closed.filter(([, next]) => this.connected(next).length === 1);
+      const [dir, next] = this.rng.pick(preferred.length ? preferred : closed);
+      this.carve(id, next, dir);
+    }
+  }
+  solve(start, end) {
+    const came = new Int32Array(this.size); came.fill(-2); came[start] = -1;
+    const queue = new Int32Array(this.size); let head = 0, tail = 0; queue[tail++] = start;
+    while (head < tail) {
+      const current = queue[head++]; if (current === end) break;
+      for (const next of this.connected(current)) if (came[next] === -2) { came[next] = current; queue[tail++] = next; }
+    }
+    if (came[end] === -2) return [];
+    const path = []; for (let current = end; current !== -1; current = came[current]) path.push(current);
+    return path.reverse();
+  }
+}
+
+function setupControls() {
+  for (const corner of CORNERS) {
+    els.start.add(new Option(corner, corner));
+    els.exit.add(new Option(corner, corner));
+  }
+  els.start.value = "Top Left"; els.exit.value = "Bottom Right";
+  const container = $("paletteControls");
+  for (const name of PALETTES) {
+    const [mode, custom] = DEFAULT_PALETTES[name]; state.palettes[name] = { mode, custom };
+    const row = document.createElement("label"); row.className = "palette-row";
+    const label = document.createElement("span"); label.textContent = name;
+    const select = document.createElement("select"); select.dataset.palette = name; select.setAttribute("aria-label", `${name} palette`);
+    for (const option of [...Object.keys(STATIC_COLORS), ...SPECIAL_COLORS]) select.add(new Option(option, option));
+    select.value = mode;
+    const color = document.createElement("input"); color.type = "color"; color.value = custom; color.dataset.custom = name; color.title = `Custom ${name.toLowerCase()} color`;
+    color.hidden = mode !== "Custom…";
+    row.append(label, select, color); container.append(row);
+    select.addEventListener("change", () => { state.palettes[name].mode = select.value; color.hidden = select.value !== "Custom…"; scheduleRender(); });
+    color.addEventListener("input", () => { state.palettes[name].custom = color.value; if (select.value === "Custom…") scheduleRender(); });
+  }
+}
+
+function cornerId(name) {
+  const m = state.maze;
+  return { "Top Left": 0, "Top Right": m.width - 1, "Bottom Left": (m.height - 1) * m.width, "Bottom Right": m.size - 1 }[name];
+}
+
+function generate() {
+  try {
+    const width = clamp(Math.round(els.width.value), 2, 300), height = clamp(Math.round(els.height.value), 2, 300);
+    els.width.value = width; els.height.value = height;
+    if (els.start.value === els.exit.value) throw new Error("Start and exit must be different corners.");
+    if (!els.seed.value.trim()) els.seed.value = randomSeed();
+    const seed = hashSeed(els.seed.value), maze = new Maze(width, height, seed);
+    const complexity = clamp(els.complexity.value, 0, 1);
+    const generators = {
+      binary: () => maze.binaryTree(), sidewinder: () => maze.sidewinder(), backtracker: () => maze.backtracker(),
+      growing: () => maze.growingTree(.15 + .85 * complexity), prim: () => maze.prim(), kruskal: () => maze.kruskal(),
+      wilson: () => maze.wilson(), aldous: () => maze.aldousBroder()
+    };
+    generators[els.algorithm.value](); maze.braid(clamp(els.braid.value, 0, 1));
+    state.maze = maze; resetPlayer(false); updateSolution(); scheduleRender(); updateStatus();
+    els.stage.focus();
+  } catch (error) { toast(error.message, true); }
+}
+
+function randomSeed() {
+  const values = new Uint32Array(1); crypto.getRandomValues(values); return String(values[0] & 0x7fffffff);
+}
+function randomizeAndGenerate() { els.seed.value = randomSeed(); generate(); }
+
+function updateSolution() {
+  if (!state.maze) return;
+  state.solution = state.maze.solve(cornerId(els.start.value), cornerId(els.exit.value));
+}
+
+function resetPlayer(redraw = true) {
+  if (!state.maze) return;
+  state.player = cornerId(els.start.value); state.trail = [state.player]; state.moves = 0; state.complete = false;
+  els.completion.hidden = true;
+  if (redraw) { scheduleRender(); updateStatus(); els.stage.focus(); }
+}
+
+function move(dir) {
+  if (!els.playerMode.checked || !state.maze || state.complete) return;
+  if (!(state.maze.grid[state.player] & dir)) { toast("Wall! Try another direction."); return; }
+  state.player = state.maze.neighbor(state.player, dir); state.trail.push(state.player); state.moves++;
+  if (state.player === cornerId(els.exit.value)) {
+    state.complete = true; els.completionText.textContent = `You reached the exit in ${state.moves} moves.`; els.completion.hidden = false;
+  }
+  scheduleRender(); updateStatus();
+}
+
+function keyHandler(event) {
+  if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement?.tagName)) return;
+  const dir = { ArrowUp: N, w: N, W: N, ArrowRight: E, d: E, D: E, ArrowDown: S, s: S, S, ArrowLeft: W, a: W, A: W }[event.key];
+  if (dir) { event.preventDefault(); move(dir); }
+}
+
+function hsvToHex(h, s = .92, v = 1) {
+  h = ((h % 1) + 1) % 1;
+  const i = Math.floor(h * 6), f = h * 6 - i, p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+  const [r, g, b] = [[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]][i % 6];
+  return `#${[r,g,b].map(x => Math.round(x * 255).toString(16).padStart(2,"0")).join("")}`;
+}
+function isRainbow(mode) { return mode.includes("Rainbow"); }
+function isAnimated(mode) { return mode.startsWith("Animated"); }
+function anyAnimated() { return Object.values(state.palettes).some(({ mode }) => isAnimated(mode)); }
+function paletteColor(name, position, phase) {
+  const { mode, custom } = state.palettes[name];
+  if (STATIC_COLORS[mode]) return STATIC_COLORS[mode];
+  if (mode === "Custom…") return custom;
+  const reverse = mode.includes("Reverse");
+  const motion = isAnimated(mode) ? phase : 0;
+  return hsvToHex(motion + (reverse ? -position : position));
+}
+
+function rainbowGradient(ctx, name, x0, y0, x1, y1, phase) {
+  const gradient = ctx.createLinearGradient(x0, y0, x1, y1);
+  for (let i = 0; i <= 12; i++) gradient.addColorStop(i / 12, paletteColor(name, i / 12, phase));
+  return gradient;
+}
+
+function drawPath(ctx, points, name, phase, width, cell, margin) {
+  if (points.length < 2) return;
+  ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.lineWidth = width;
+  const center = (id) => [margin + state.maze.x(id) * cell + cell / 2, margin + state.maze.y(id) * cell + cell / 2];
+  if (isRainbow(state.palettes[name].mode)) {
+    for (let i = 0; i < points.length - 1; i++) {
+      const a = center(points[i]), b = center(points[i + 1]); ctx.strokeStyle = paletteColor(name, i / Math.max(1, points.length - 2), phase);
+      ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.stroke();
+    }
+  } else {
+    ctx.strokeStyle = paletteColor(name, .5, phase); ctx.beginPath();
+    points.forEach((id, i) => { const p = center(id); i ? ctx.lineTo(...p) : ctx.moveTo(...p); }); ctx.stroke();
+  }
+}
+
+function renderTo(canvas, phase, options = {}) {
+  const maze = state.maze; if (!maze) return;
+  const cell = options.cell ?? clamp(els.cellSize.value, 4, 100);
+  const wall = options.wall ?? clamp(els.wallWidth.value, 1, 20);
+  const margin = Math.max(8, Math.round(cell * .67));
+  const width = Math.ceil(maze.width * cell + margin * 2 + wall), height = Math.ceil(maze.height * cell + margin * 2 + wall);
+  canvas.width = width; canvas.height = height;
+  const ctx = canvas.getContext("2d", { alpha: false });
+  const boardMode = state.palettes.Board.mode;
+  ctx.fillStyle = isRainbow(boardMode) ? rainbowGradient(ctx, "Board", 0, 0, width, height, phase) : paletteColor("Board", 0, phase);
+  ctx.fillRect(0, 0, width, height);
+  const x0 = margin, y0 = margin, x1 = x0 + maze.width * cell, y1 = y0 + maze.height * cell;
+  ctx.lineWidth = wall; ctx.lineCap = "butt";
+  const wallStroke = (position) => paletteColor("Walls", position, phase);
+  for (let x = 0; x < maze.width; x++) {
+    const p = x / Math.max(1, maze.width - 1), left = x0 + x * cell, right = left + cell;
+    ctx.strokeStyle = wallStroke(p); ctx.beginPath(); ctx.moveTo(left, y0); ctx.lineTo(right, y0); ctx.moveTo(left, y1); ctx.lineTo(right, y1); ctx.stroke();
+  }
+  for (let y = 0; y < maze.height; y++) {
+    const p = y / Math.max(1, maze.height - 1), top = y0 + y * cell, bottom = top + cell;
+    ctx.strokeStyle = wallStroke(p); ctx.beginPath(); ctx.moveTo(x0, top); ctx.lineTo(x0, bottom); ctx.moveTo(x1, top); ctx.lineTo(x1, bottom); ctx.stroke();
+  }
+  for (let y = 0; y < maze.height; y++) for (let x = 0; x < maze.width; x++) {
+    const id = maze.id(x, y), passages = maze.grid[id], left = x0 + x * cell, top = y0 + y * cell, right = left + cell, bottom = top + cell;
+    ctx.strokeStyle = wallStroke((x / Math.max(1, maze.width - 1) + y / Math.max(1, maze.height - 1)) / 2);
+    ctx.beginPath();
+    if (x < maze.width - 1 && !(passages & E)) { ctx.moveTo(right, top); ctx.lineTo(right, bottom); }
+    if (y < maze.height - 1 && !(passages & S)) { ctx.moveTo(left, bottom); ctx.lineTo(right, bottom); }
+    ctx.stroke();
+  }
+  if (els.showSolution.checked) drawPath(ctx, state.solution, "Solution", phase, Math.max(2, cell / 5), cell, margin);
+  if (els.playerMode.checked && els.showTrail.checked) drawPath(ctx, state.trail, "Trail", phase, Math.max(2, cell / 4), cell, margin);
+  const center = (id) => [x0 + maze.x(id) * cell + cell / 2, y0 + maze.y(id) * cell + cell / 2];
+  const markerRadius = Math.max(3, cell / 4);
+  for (const [name, id] of [["Start", cornerId(els.start.value)], ["Exit", cornerId(els.exit.value)]]) {
+    const [cx, cy] = center(id); ctx.fillStyle = paletteColor(name, .5, phase); ctx.strokeStyle = "#000"; ctx.lineWidth = Math.max(1, wall / 2);
+    ctx.beginPath(); ctx.arc(cx, cy, markerRadius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  }
+  if (els.playerMode.checked) {
+    const [cx, cy] = center(state.player), radius = Math.max(4, cell * .31), pos = (maze.x(state.player) + maze.y(state.player)) / Math.max(1, maze.width + maze.height - 2);
+    ctx.fillStyle = paletteColor("Player", pos, phase); ctx.strokeStyle = "#fff"; ctx.lineWidth = Math.max(1, wall);
+    ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.beginPath(); ctx.arc(cx - radius * .35, cy - radius * .35, Math.max(1.5, radius / 5), 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function previewCellSize() {
+  if (!state.maze) return 16;
+  const rect = els.stage.getBoundingClientRect(), margin = 22;
+  return Math.max(2, Math.min(clamp(els.cellSize.value, 4, 100), (rect.width - margin * 2) / state.maze.width, (rect.height - margin * 2) / state.maze.height));
+}
+function renderPreview() { state.renderPending = false; if (!state.maze) return; state.previewCell = previewCellSize(); renderTo(els.canvas, state.phase, { cell: state.previewCell, wall: Math.max(1, clamp(els.wallWidth.value, 1, 20) * state.previewCell / clamp(els.cellSize.value, 4, 100)) }); }
+function scheduleRender() { if (!state.renderPending) { state.renderPending = true; requestAnimationFrame(renderPreview); } }
+
+function updateStatus() {
+  if (!state.maze) return;
+  const shortest = Math.max(0, state.solution.length - 1), player = els.playerMode.checked ? ` · ${state.moves} player moves${state.complete ? " · COMPLETE" : ""}` : "";
+  els.status.innerHTML = `<strong>${ALGORITHM_NAMES[els.algorithm.value]}</strong> · ${state.maze.width}×${state.maze.height} · seed ${escapeHtml(els.seed.value)} · shortest ${shortest}${player}`;
+}
+function escapeHtml(value) { const div = document.createElement("div"); div.textContent = value; return div.innerHTML; }
+
+function validateExportSize(cell) {
+  const m = state.maze, margin = Math.max(8, Math.round(cell * .67)), w = Math.ceil(m.width * cell + margin * 2 + clamp(els.wallWidth.value, 1, 20)), h = Math.ceil(m.height * cell + margin * 2 + clamp(els.wallWidth.value, 1, 20));
+  if (w > 16384 || h > 16384 || w * h > 70000000) throw new Error(`Export would be ${w.toLocaleString()}×${h.toLocaleString()} px. Lower the cell size or maze dimensions.`);
+  return [w, h];
+}
+
+function filename(ext) {
+  const slug = els.algorithm.options[els.algorithm.selectedIndex].text.split(" (")[0].toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  return `maze_${slug}_${state.maze.width}x${state.maze.height}_seed_${String(els.seed.value).replace(/[^a-z0-9_-]+/gi,"_")}.${ext}`;
+}
+function downloadBlob(blob, name) { const url = URL.createObjectURL(blob), link = document.createElement("a"); link.href = url; link.download = name; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1500); }
+function canvasBlob(canvas, type, quality) { return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("The browser could not encode this image.")), type, quality)); }
+
+function bmpBlob(canvas) {
+  const ctx = canvas.getContext("2d"), { width, height } = canvas, rgba = ctx.getImageData(0, 0, width, height).data;
+  const row = Math.ceil(width * 3 / 4) * 4, pixelBytes = row * height, buffer = new ArrayBuffer(54 + pixelBytes), view = new DataView(buffer), bytes = new Uint8Array(buffer);
+  const write = (offset, value, size) => size === 2 ? view.setUint16(offset, value, true) : view.setUint32(offset, value, true);
+  bytes[0] = 0x42; bytes[1] = 0x4d; write(2, buffer.byteLength, 4); write(10, 54, 4); write(14, 40, 4); write(18, width, 4); write(22, height, 4); write(26, 1, 2); write(28, 24, 2); write(34, pixelBytes, 4);
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    const source = ((height - 1 - y) * width + x) * 4, target = 54 + y * row + x * 3;
+    bytes[target] = rgba[source + 2]; bytes[target + 1] = rgba[source + 1]; bytes[target + 2] = rgba[source];
+  }
+  return new Blob([buffer], { type: "image/bmp" });
+}
+
+async function exportImage() {
+  if (!state.maze || state.exporting) return;
+  const format = els.format.value, cell = clamp(els.cellSize.value, 4, 100);
+  try {
+    validateExportSize(cell); state.exporting = true; els.download.disabled = true; els.download.textContent = "Rendering…";
+    const canvas = document.createElement("canvas");
+    if (format === "gif") {
+      const animated = anyAnimated(), frameCount = animated ? clamp(Math.round(els.gifFrames.value), 8, 180) : 1, delay = clamp(Math.round(els.gifSpeed.value), 20, 500);
+      const encoder = GIFEncoder();
+      for (let i = 0; i < frameCount; i++) {
+        els.download.textContent = `Encoding GIF ${i + 1}/${frameCount}`; await new Promise(requestAnimationFrame);
+        renderTo(canvas, animated ? i / frameCount : state.phase, { cell });
+        const rgba = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+        const palette = quantize(rgba, 256), index = applyPalette(rgba, palette);
+        encoder.writeFrame(index, canvas.width, canvas.height, { palette, delay, repeat: 0 });
+      }
+      encoder.finish(); downloadBlob(new Blob([encoder.bytes()], { type: "image/gif" }), filename("gif"));
+    } else {
+      renderTo(canvas, state.phase, { cell });
+      const blob = format === "bmp" ? bmpBlob(canvas) : await canvasBlob(canvas, format === "jpeg" ? "image/jpeg" : "image/png", .95);
+      downloadBlob(blob, filename(format === "jpeg" ? "jpg" : format));
+    }
+    toast(`${format.toUpperCase()} downloaded.`);
+  } catch (error) { toast(error.message, true); }
+  finally { state.exporting = false; els.download.disabled = false; updateFormatUI(); }
+}
+
+let toastTimer;
+function toast(message, danger = false) {
+  clearTimeout(toastTimer); els.toast.textContent = message; els.toast.style.borderColor = danger ? "#a84b5c" : ""; els.toast.classList.add("show");
+  toastTimer = setTimeout(() => els.toast.classList.remove("show"), 2200);
+}
+
+function updateFormatUI() {
+  const fmt = els.format.value; els.gifOptions.classList.toggle("is-hidden", fmt !== "gif");
+  els.download.textContent = `Download ${fmt === "jpeg" ? "JPEG" : fmt.toUpperCase()}`;
+}
+
+function bindEvents() {
+  $("generateTop").addEventListener("click", generate); $("randomSeed").addEventListener("click", randomizeAndGenerate); $("seedDice").addEventListener("click", randomizeAndGenerate);
+  $("resetPlayer").addEventListener("click", () => resetPlayer()); $("playAgain").addEventListener("click", () => resetPlayer());
+  els.playerMode.addEventListener("change", () => { resetPlayer(false); scheduleRender(); updateStatus(); els.stage.focus(); });
+  els.showTrail.addEventListener("change", scheduleRender); els.showSolution.addEventListener("change", () => { els.solutionQuick.setAttribute("aria-pressed", String(els.showSolution.checked)); els.solutionQuick.textContent = els.showSolution.checked ? "Hide solution" : "Show solution"; scheduleRender(); });
+  els.solutionQuick.addEventListener("click", () => { els.showSolution.checked = !els.showSolution.checked; els.showSolution.dispatchEvent(new Event("change")); });
+  for (const select of [els.start, els.exit]) select.addEventListener("change", () => {
+    if (els.start.value === els.exit.value) { toast("Start and exit must be different corners.", true); return; }
+    updateSolution(); resetPlayer(false); scheduleRender(); updateStatus();
+  });
+  for (const input of [els.cellSize, els.wallWidth]) input.addEventListener("input", scheduleRender);
+  for (const [input, output] of [[els.complexity, els.complexityOut], [els.braid, els.braidOut]]) input.addEventListener("input", () => output.textContent = `${Math.round(input.value * 100)}%`);
+  els.format.addEventListener("change", updateFormatUI); els.download.addEventListener("click", exportImage);
+  window.addEventListener("keydown", keyHandler); window.addEventListener("resize", scheduleRender);
+  new ResizeObserver(scheduleRender).observe(els.stage);
+  document.querySelectorAll(".dpad button").forEach(button => button.addEventListener("click", () => { move({ N, E, S, W }[button.dataset.dir]); els.stage.focus(); }));
+}
+
+let lastAnimatedRender = 0;
+function animationLoop(time) {
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (anyAnimated() && !reduced && time - lastAnimatedRender >= 48) {
+    lastAnimatedRender = time; state.phase = (time / 4200) % 1; scheduleRender();
+  }
+  requestAnimationFrame(animationLoop);
+}
+
+setupControls(); bindEvents(); updateFormatUI(); generate(); requestAnimationFrame(animationLoop);
+
+</script>
+</body>
+</html>
